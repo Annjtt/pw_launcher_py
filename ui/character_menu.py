@@ -67,7 +67,6 @@ def character_menu(root, frame, profiles):
             characters.pop(index)
             profile["characters"] = characters
             update_profile(profiles["active_profile"], profile, profiles)
-            messagebox.showinfo("Успех", f"Персонаж {char_name} удалён.")
             character_menu(root, frame, profiles)
         else:
             messagebox.showerror("Ошибка", "Неверный индекс персонажа.")
@@ -93,6 +92,15 @@ def character_menu(root, frame, profiles):
     btn_select_all.bind("<Enter>", style.on_hover)
     btn_select_all.bind("<Leave>", lambda event: style.on_leave(event, "#333333", "#19e1a0"))
     
+    def go_to_profile_menu():
+        from ui.profile_menu import profile_menu
+        profile_menu(root, frame, profiles)
+
+    gear_btn = tk.Button(button_frame, text="⚙", command=go_to_profile_menu,
+                        font=("Helvetica", 10, "bold"), bg="#333333", fg="#f39c12", relief="flat")
+    gear_btn.pack(side="left", padx=2)
+    gear_btn.bind("<Enter>", style.on_hover)
+    gear_btn.bind("<Leave>", lambda event: style.on_leave(event, "#333333", "#f39c12"))
     profile_label = tk.Label(button_frame, text=f"Профиль: {profile_name}", 
                              font=("Fixedsys", 16), bg="#222222", fg="#dedede")
     profile_label.pack(side="left", padx=5)
@@ -127,7 +135,7 @@ def character_menu(root, frame, profiles):
     root.bind_all("<MouseWheel>", _on_mousewheel)
 
     if not characters:
-        tk.Label(scrollable_frame, text="Нет персонажей", font=("Helvetica", 16, "bold"), bg="#222222", fg="#d42d52").pack(pady=5)
+        tk.Label(scrollable_frame, text="Нет персонажей", font=("Helvetica", 14, "bold"), bg="#222222", fg="#d42d52").pack(pady=10)
 
     # Поддерживаем несколько стандартных путей для иконок
     icon_dirs = [
@@ -184,14 +192,14 @@ def character_menu(root, frame, profiles):
             char_frame, variable=var, font=("Helvetica", 12), bg="#333333", fg="#19e1a0", selectcolor="#222222",
             command=lambda i=i: toggle_character(i)
         )
-        check_button.pack(side="left", padx=5)
+        check_button.pack(side="left", padx=2)
 
         # Иконка класса — сразу после чекбокса
         icon_name = char.get("icon")
         icon_image = get_icon_image(icon_name)
         if icon_image:
             icon_label = tk.Label(char_frame, image=icon_image, bg="#333333")
-            icon_label.pack(side="left", padx=(0, 0))
+            icon_label.pack(side="left", padx=0)
             frame.icon_images.append(icon_image)
 
         # Ник + логин

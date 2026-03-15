@@ -20,9 +20,9 @@ def add_character_menu(root, frame, index, profiles):
     # Человеческие названия классов по имени файла (без расширения)
     icon_labels_map = {
         "bard": "Бард",
-        "dk": "ДК",
+        "dk": "Дух Крови",
         "dru": "Друид",
-        "gan": "Ганнер",
+        "gan": "Стрелок",
         "gost": "Призрак",
         "kosa": "Жнец",
         "luk": "Лучник",
@@ -35,7 +35,7 @@ def add_character_menu(root, frame, index, profiles):
         "sik": "Сикер",
         "sin": "Син",
         "tank": "Танк",
-        "var": "Вар",
+        "var": "Воен",
     }
 
     # Ищем иконки в нескольких стандартных путях

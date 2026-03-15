@@ -38,7 +38,6 @@ def get_active_profile(profiles):
 def set_active_profile(profile_name, root, frame, profiles):
     profiles["active_profile"] = profile_name
     save_config(profiles)
-    messagebox.showinfo("Успех", f"Активный профиль {profile_name}")
     from ui.character_menu import character_menu
     character_menu(root, frame, profiles)
 
@@ -50,7 +49,6 @@ def delete_profile(profile_name, root, frame, profiles):
     if profile_name in profiles["profiles"]:
         del profiles["profiles"][profile_name]
         save_config(profiles)
-        messagebox.showinfo("Успех", f"Профиль {profile_name} удалён.")
         from ui.profile_menu import profile_menu
         profile_menu(root, frame, profiles)
     else:
@@ -119,33 +117,69 @@ class MainApplication:
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
         x = (screen_width - 1) // 2
-        y = (screen_height - 580) // 2
-        self.root.geometry(f"460x580+{x}+{y}")
+        y = (screen_height - 480) // 2
+        self.root.geometry(f"460x590+{x}+{y}")
         self.loading = True
+        self.loading_bar_animating = False
         self.show_loading_screen()
 
     def show_loading_screen(self):
         for widget in self.root.winfo_children():
             widget.destroy()
+
         self.loading_label = tk.Label(
             self.root,
             text="Loading...",
             font=("Helvetica", 36, "bold"),
-            fg="#19e1a0",
+            fg="#dddddd",
             bg="#222222"
         )
         self.loading_label.pack(expand=True)
+
+        # Полоска загрузки — под надписью загрузки!
+        self.loading_bar_canvas = tk.Canvas(
+            self.root,
+            width=220,
+            height=8,
+            bg="#444444",
+            highlightthickness=0
+        )
+        self.loading_bar_canvas.pack(pady=(1, 40))  # отступ сверху небольшой после надписи
+        self._loading_bar_rect = self.loading_bar_canvas.create_rectangle(
+            0, 0, 0, 10, fill="#19e1a0", outline="#19e1a0"
+        )
+        self._bar_fill = 0
+        self._bar_max = 220
+        self.loading_bar_animating = True
+
+        def animate_bar():
+            if not self.loading_bar_animating:
+                return
+            if self._bar_fill < self._bar_max:
+                self._bar_fill += 3
+                if self._bar_fill > self._bar_max:
+                    self._bar_fill = self._bar_max
+                try:
+                    self.loading_bar_canvas.coords(self._loading_bar_rect, 0, 0, self._bar_fill, 10)
+                except tk.TclError:
+                    return
+                self.root.after(16, animate_bar)
+            else:
+                self.loading_bar_animating = False
+
+        animate_bar()
+
         style = StyleManager()
         style.animate_text(self.loading_label, "Loading...", loop=True)
         # Version at the very bottom
         self.version_label = tk.Label(
             self.root,
-            text="v.3.1.1",
+            text="v.3.1.2",
             font=("Fixedsys", 10),
             fg="#dedede",
             bg="#222222"
         )
-        self.version_label.pack(side="bottom", pady=(0, 6))
+        self.version_label.pack(side="bottom", pady=(0, 20))
         # Footer note
         self.footer_label = tk.Label(
             self.root,
@@ -155,7 +189,14 @@ class MainApplication:
             bg="#222222"
         )
         self.footer_label.pack(side="bottom", pady=(0, 2))
-        self.root.after(1666, self.transition_to_main_menu)
+        self.root.after(1900, self.transition_to_main_menu)
+
+    def transition_to_main_menu(self):
+        self.loading = False
+        self.loading_bar_animating = False
+        if hasattr(self, 'text_animation'):
+            self.text_animation.stop()
+        self.show_main_menu()
 
     def transition_to_main_menu(self):
         self.loading = False
