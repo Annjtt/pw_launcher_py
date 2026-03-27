@@ -11,15 +11,15 @@ import os
 import threading
 
 # ====== UI COLOR STYLES, matching @add_character_menu.py and @profile_menu.py ======
-UI_BG = "#22272a"
-UI_ACCENT = "#455363"
+UI_BG = "#222222"
+UI_ACCENT = "#333333"
 UI_ACCENT_HOVER = "#606d7b"
 UI_FG = "#ffffff"
 UI_WARN = "#ff6666"
-UI_OK = "#51e27b"
+UI_OK = "#19e1a0"
 UI_DISABLE = "#888888"
-UI_FONT = ("Arial", 11)
-UI_FONT_BOLD = ("Arial", 12, "bold")
+UI_FONT = ("Helvetica", 12)
+UI_FONT_BOLD = ("Helvetica", 12, "bold")
 
 ICON_SIZE = 28  # Make buff icon reasonable size for the list
 
@@ -62,11 +62,11 @@ class DebuffMonitorUI(tk.Frame):
         # Окно для выбора окна игры
         win_fr = Frame(self, bg=UI_BG)
         win_fr.pack(pady=(6, 10), fill=BOTH)
-        Label(win_fr, text="Окно для поиска:", bg=UI_BG, fg=UI_FG, font=UI_FONT).pack(side=LEFT)
+        Label(win_fr, text="Окно:", bg=UI_BG, fg=UI_FG, font=UI_FONT).pack(side=LEFT)
         self.window_dropdown = ttk.Combobox(win_fr, width=32, state='readonly')
         self.window_dropdown.pack(side=LEFT, padx=5)
         self.window_dropdown.bind("<<ComboboxSelected>>", self._on_window_selected)
-        Button(win_fr, text="Обновить окна", font=UI_FONT, bg=UI_ACCENT, fg=UI_FG,
+        Button(win_fr, text="Обновить", font=UI_FONT, bg=UI_ACCENT, fg=UI_FG,
                activebackground=UI_ACCENT_HOVER, activeforeground=UI_FG, relief=tk.FLAT,
                command=self.list_windows).pack(side=LEFT, padx=(10, 0))
         self.window_dropdown["values"] = []
