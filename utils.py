@@ -94,9 +94,13 @@ def navigate_to(option, root, frame, profiles):
     if option == "Персонажи":
         from ui.character_menu import character_menu
         character_menu(root, frame, profiles)
-    elif option == "Быстрое добавление":
-        from ui.add_character_menu import add_character_menu
-        add_character_menu(root, frame, None, profiles)
+    elif option == "Мониторинг":
+        from ui.debuff_monitor import DebuffMonitorUI
+        # Очищаем фрейм перед добавлением новой страницы
+        for widget in frame.winfo_children():
+            widget.destroy()
+        monitor_page = DebuffMonitorUI(frame, profiles.get("window_title", ""))
+        monitor_page.pack(fill="both", expand=True)
     elif option == "Профиль":
         from ui.profile_menu import profile_menu
         profile_menu(root, frame, profiles)

@@ -15,7 +15,7 @@ def main_menu(root, frame, profiles):
     
     button_frame = tk.Frame(frame, bg="#222222")
     button_frame.pack(pady=10)
-    buttons = ["Персонажи", "Быстрое добавление", "Профиль", "Настройки", "Выход"]
+    buttons = ["Персонажи", "Мониторинг", "Профиль", "Настройки", "Выход"]
     for btn_text in buttons:
         btn = tk.Button(
             button_frame, 
