@@ -99,7 +99,7 @@ def navigate_to(option, root, frame, profiles):
         # Очищаем фрейм перед добавлением новой страницы
         for widget in frame.winfo_children():
             widget.destroy()
-        monitor_page = DebuffMonitorUI(frame, profiles.get("window_title", ""))
+        monitor_page = DebuffMonitorUI(frame, profiles)
         monitor_page.pack(fill="both", expand=True)
     elif option == "Профиль":
         from ui.profile_menu import profile_menu
