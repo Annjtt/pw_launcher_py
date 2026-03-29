@@ -141,7 +141,7 @@ class DebuffMonitorUI(tk.Frame):
 
         # === Область захвата (КОМПАКТНО) ===
         capture_frame = LabelFrame(
-            self, text="🎯 Область захвата (%)", 
+            self, text="Область захвата (%)", 
             font=("Helvetica", 9, "bold"),
             bg=self.style.colors["bg_main"], fg="#19e1a0",
             padx=5, pady=3
@@ -167,7 +167,7 @@ class DebuffMonitorUI(tk.Frame):
 
         # === Позиция оверлея (КОМПАКТНО) ===
         overlay_frame = LabelFrame(
-            self, text="🔔 Позиция оверлея", 
+            self, text="Позиция оверлея", 
             font=("Helvetica", 9, "bold"),
             bg=self.style.colors["bg_main"], fg="#19e1a0",
             padx=5, pady=3
@@ -289,9 +289,9 @@ class DebuffMonitorUI(tk.Frame):
         btn_fr = Frame(self, bg=self.style.colors["bg_main"])
         btn_fr.pack(pady=3)
         
-        Button(btn_fr, text="💾", font=("Helvetica", 9),
+        Button(btn_fr, text="Сохранить", font=("Helvetica", 9),
                bg=self.style.colors["bg_button"], fg="#19e1a0",
-               relief="flat", cursor="hand2", width=5,
+               relief="flat", cursor="hand2", width=12,
                command=self._save_all_settings).pack(side=LEFT, padx=2)
         
         Button(btn_fr, text="← Назад", font=("Helvetica", 9, "bold"),
