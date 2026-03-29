@@ -69,34 +69,61 @@ class DebuffMonitorUI(tk.Frame):
         self._populate_debuff_list()
 
     def _load_profile_settings(self):
+        # Always reset to defaults first!
+        self.capture_area = DEFAULT_CAPTURE_AREA.copy()
+        self.overlay_pos = DEFAULT_OVERLAY_POS.copy()
+        self.saved_enabled_debuffs = set()
+
         if not self.profile:
             return
-        
+
         monitor_config = self.profile.get("debuff_monitor", {})
-        
-        if "capture_area" in monitor_config:
-            self.capture_area.update(monitor_config["capture_area"])
-        
-        if "overlay_pos" in monitor_config:
-            self.overlay_pos.update(monitor_config["overlay_pos"])
-        
+
+        # Подставить capture_area (или default)
+        if isinstance(monitor_config.get("capture_area", None), dict):
+            self.capture_area.update({
+                k: monitor_config["capture_area"].get(k, self.capture_area[k])
+                for k in self.capture_area
+            })
+
+        # Подставить overlay_pos (или default)
+        if isinstance(monitor_config.get("overlay_pos", None), dict):
+            self.overlay_pos.update({
+                k: monitor_config["overlay_pos"].get(k, self.overlay_pos[k])
+                for k in self.overlay_pos
+            })
+
+        # enabled/checked debuffs (или пусто)
         self.saved_enabled_debuffs = set(monitor_config.get("enabled", []))
+
+        # Обновить значения в окне, если они уже инициализированы
+        # (Чтобы записи/виджеты обновили свои значения при запуске)
+        for key, var in self.capture_vars.items():
+            if key in self.capture_area:
+                var.set(str(self.capture_area[key]))
+        if self.overlay_preset_var is not None and "preset" in self.overlay_pos:
+            self.overlay_preset_var.set(self.overlay_pos["preset"])
+        if self.overlay_x_var is not None and self.overlay_pos.get("x") is not None:
+            self.overlay_x_var.set(str(self.overlay_pos["x"]))
+        if self.overlay_y_var is not None and self.overlay_pos.get("y") is not None:
+            self.overlay_y_var.set(str(self.overlay_pos["y"]))
 
     def _save_profile_settings(self):
         if not self.profile or not self.profiles:
             return
-        
+
         enabled = [name for name, var in self.debuff_check_vars.items() if var.get()]
-        
+
         if "debuff_monitor" not in self.profile:
             self.profile["debuff_monitor"] = {}
-        
+
+        # Обновляем профиль согласно UI
         self.profile["debuff_monitor"].update({
             "enabled": enabled,
             "capture_area": self.capture_area,
             "overlay_pos": self.overlay_pos
         })
-        
+
         profile_name = self.profiles.get("active_profile")
         if profile_name:
             update_profile(profile_name, self.profile, self.profiles)
@@ -553,7 +580,7 @@ class DebuffMonitorUI(tk.Frame):
         return found_debuffs
 
     def show_overlay(self, debuff_name):
-        """Показ оверлея — ИСПРАВЛЕНО"""
+        """Показ оверлея — изменено: смещение дополнительных иконок теперь влево, а не вверх"""
         info = self.overlays.get(debuff_name)
         if not info or info.get("overlay_window"):
             return
@@ -596,11 +623,11 @@ class DebuffMonitorUI(tk.Frame):
             }
             pos_x, pos_y = positions.get(self.overlay_pos.get("preset", "top_right"), (sw - 100, 20))
         
+        # Новый расчет смещения: теперь делаем отступ влево от основной иконки
         offset = list(self.overlays.keys()).index(debuff_name) * (ICON_SIZE_OVERLAY + 5)
-        if self.overlay_pos.get("preset", "").startswith("bottom"):
-            pos_y -= offset
-        else:
-            pos_y += offset
+        pos_x -= offset  # Двигаем каждую дополнительную иконку влево от основного положения
+
+        # По вертикали больше не сдвигаем, только горизонтальное выравнивание
         
         overlay.geometry(f"+{pos_x}+{pos_y}")
         overlay.lift()
