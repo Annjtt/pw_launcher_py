@@ -257,7 +257,6 @@ class DebuffMonitorUI(tk.Frame):
         Button(coords_fr, text="OK", font=("Helvetica", 8, "bold"),
                bg=self.style.colors["bg_button"], fg="#19e1a0",
                relief="flat", cursor="hand2", width=4, command=self._save_overlay_settings).pack(side=LEFT, padx=5)
-
         # === Статус и кнопки (В ОДНУ ЛИНИЮ) ===
         ctrl_fr = Frame(self, bg=self.style.colors["bg_main"])
         ctrl_fr.pack(pady=3)
@@ -265,7 +264,16 @@ class DebuffMonitorUI(tk.Frame):
         Label(ctrl_fr, textvariable=self.status_text, 
               bg=self.style.colors["bg_main"], fg=self.style.colors["fg_main"], 
               font=("Fixedsys", 8), width=20).pack(side=LEFT, padx=5)
-        
+        # === кнопочка отладки ===
+        self.debug_btn = Button(
+            ctrl_fr, text="🟢 Отладка OFF", font=("Helvetica", 9, "bold"), 
+            bg=self.style.colors["bg_button"], fg="#f39c12",
+            relief="flat", cursor="hand2", width=12,
+            command=self.toggle_debug_mode
+        )
+        self.debug_btn.pack(side=LEFT, padx=3)
+        self.debug_btn.bind("<Enter>", self.style.on_hover)
+        self.debug_btn.bind("<Leave>", lambda e: self.style.on_leave(e, self.style.colors["bg_button"], "#f39c12"))
         self.start_btn = Button(
             ctrl_fr, text="▶ Старт", font=("Helvetica", 9, "bold"), 
             bg=self.style.colors["bg_button"], fg="#19e1a0",
@@ -327,6 +335,115 @@ class DebuffMonitorUI(tk.Frame):
                command=self._go_back).pack(side=LEFT, padx=10)
 
         self.err_label = None
+
+    def create_debug_windows(self):
+        """Создает окна для отладочных рамок"""
+        try:
+            # Красная рамка (область поиска)
+            self.red_border = tk.Toplevel(self)
+            self.red_border.overrideredirect(True)
+            self.red_border.attributes('-topmost', True)
+            self.red_border.attributes('-alpha', 0.4)
+            self.red_border.configure(bg='red')
+            self.red_border.withdraw()
+            
+            # Зеленая рамка (область вывода)
+            self.green_border = tk.Toplevel(self)
+            self.green_border.overrideredirect(True)
+            self.green_border.attributes('-topmost', True)
+            self.green_border.attributes('-alpha', 0.4)
+            self.green_border.configure(bg='green')
+            self.green_border.withdraw()
+            
+            self.debug_windows_created = True
+        except Exception as e:
+            print(f"Ошибка создания рамок: {e}")
+            self.debug_windows_created = False
+    
+    def update_debug_borders(self):
+        """Обновляет позиции отладочных рамок"""
+        if not hasattr(self, 'debug_windows_created') or not self.debug_windows_created:
+            return
+        
+        if not self.debug_mode:
+            return
+        
+        window = self.get_game_window()
+        if not window:
+            return
+        
+        # Красная рамка - область поиска
+        x, y, w, h = window
+        cap_x = x + int(w * self.capture_area["x"] / 100)
+        cap_y = y + int(h * self.capture_area["y"] / 100)
+        cap_w = int(w * self.capture_area["w"] / 100)
+        cap_h = int(h * self.capture_area["h"] / 100)
+        
+        if hasattr(self, 'red_border'):
+            self.red_border.geometry(f"{cap_w}x{cap_h}+{cap_x}+{cap_y}")
+            self.red_border.deiconify()
+        
+        # Зеленая рамка - область вывода
+        if hasattr(self, 'overlay_win'):
+            ox = self.overlay_win.winfo_x()
+            oy = self.overlay_win.winfo_y()
+            ow = self.overlay_win.winfo_width()
+            oh = self.overlay_win.winfo_height()
+        else:
+            sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
+            if self.overlay_pos.get("preset") == "custom" and self.overlay_pos.get("x") is not None:
+                ox, oy = self.overlay_pos["x"], self.overlay_pos["y"]
+            else:
+                positions = {
+                    "top_right": (sw - ICON_SIZE_OVERLAY - 20, 20),
+                    "top_left": (20, 20),
+                    "bottom_right": (sw - ICON_SIZE_OVERLAY - 20, sh - ICON_SIZE_OVERLAY - 20),
+                    "bottom_left": (20, sh - ICON_SIZE_OVERLAY - 20)
+                }
+                ox, oy = positions.get(self.overlay_pos.get("preset", "top_right"), (sw - 100, 20))
+            ow, oh = ICON_SIZE_OVERLAY, ICON_SIZE_OVERLAY
+        
+        if hasattr(self, 'green_border'):
+            self.green_border.geometry(f"{ow}x{oh}+{ox}+{oy}")
+            self.green_border.deiconify()
+    
+    def hide_debug_borders(self):
+        """Скрывает отладочные рамки"""
+        if hasattr(self, 'red_border'):
+            self.red_border.withdraw()
+        if hasattr(self, 'green_border'):
+            self.green_border.withdraw()
+    
+    def toggle_debug_mode(self):
+        """Включает/выключает режим отладки"""
+        self.debug_mode = not self.debug_mode
+        
+        if self.debug_mode:
+            if not hasattr(self, 'debug_windows_created') or not self.debug_windows_created:
+                self.create_debug_windows()
+            self.update_debug_borders()
+            self.debug_btn.config(text="🔴 Отладка ON", bg="#d42d52")
+            self.status_text.set("Режим отладки ВКЛЮЧЕН")
+            # Запускаем обновление рамок в цикле
+            self._start_debug_updater()
+        else:
+            self.hide_debug_borders()
+            self.debug_btn.config(text="🟢 Отладка OFF", bg=self.style.colors["bg_button"])
+            self.status_text.set("Режим отладки ВЫКЛЮЧЕН")
+            if hasattr(self, '_debug_updater_running'):
+                self._debug_updater_running = False
+    
+    def _start_debug_updater(self):
+        """Запускает поток для обновления рамок в реальном времени"""
+        self._debug_updater_running = True
+        
+        def update_loop():
+            while self.debug_mode and self._debug_updater_running:
+                if self.debug_mode:
+                    self.update_debug_borders()
+                time.sleep(0.2)
+        
+        threading.Thread(target=update_loop, daemon=True).start()
 
     def _on_frame_configure(self, event):
         self.debuff_canvas.configure(scrollregion=self.debuff_canvas.bbox("all"))
@@ -633,6 +750,8 @@ class DebuffMonitorUI(tk.Frame):
         overlay.lift()
         overlay.update()
         info["overlay_window"] = overlay
+        # Сохранение для зеленой рамки
+        self.overlay_win = overlay  
 
     def hide_overlay(self, debuff_name):
         info = self.overlays.get(debuff_name)
