@@ -42,7 +42,7 @@ class DebuffMonitorUI(tk.Frame):
         self.monitoring = False
         self.monitor_thread = None
         self._stop_event = threading.Event()
-        self.check_interval = 0.5
+        self.check_interval = 0.3
         self.active_debuffs = set()
         self.debug_mode = False
         
@@ -689,7 +689,7 @@ class DebuffMonitorUI(tk.Frame):
                     if max_val > best_val:
                         best_val = max_val
                 
-                if best_val >= 0.65:
+                if best_val >= 0.8:
                     found_debuffs.add(name)
             except:
                 pass
