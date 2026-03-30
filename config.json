@@ -20,19 +20,20 @@
             "debuff_monitor": {
                 "enabled": [
                     "MDF",
+                    "PDF",
                     "dragons",
                     "fire"
                 ],
                 "capture_area": {
-                    "x": 0,
-                    "y": 0,
-                    "w": 20,
+                    "x": 34,
+                    "y": 9,
+                    "w": 35,
                     "h": 15
                 },
                 "overlay_pos": {
                     "preset": "custom",
-                    "x": 1468,
-                    "y": 20
+                    "x": 1652,
+                    "y": 80
                 }
             }
         }
