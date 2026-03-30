@@ -5,7 +5,7 @@ from PIL import ImageGrab, Image, ImageTk
 import time
 import tkinter as tk
 from tkinter import (
-    Label, Frame, Button, StringVar, BOTH, LEFT, RIGHT, TOP, 
+    Label, Frame, Button, StringVar, BOTH, LEFT, RIGHT, TOP, BOTTOM, 
     messagebox, ttk, Checkbutton, BooleanVar, Toplevel, 
     Scrollbar, Listbox, END, Entry, LabelFrame
 )
@@ -17,7 +17,51 @@ import threading
 # Импорт системных модулей приложения
 from styles import StyleManager
 from utils import get_active_profile, update_profile, navigate_to
-
+# ====== ВСПОМОГАТЕЛЬНЫЕ КЛАССЫ ======
+class ToolTip:
+    """Всплывающая подсказка при наведении на виджет"""
+    
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip_window = None
+        self.widget.bind("<Enter>", self.show_tip)
+        self.widget.bind("<Leave>", self.hide_tip)
+    
+    def show_tip(self, event=None):
+        """Показывает подсказку"""
+        if self.tooltip_window or not self.text:
+            return
+        
+        # Получаем координаты виджета
+        x, y, _, _ = self.widget.bbox("insert") if hasattr(self.widget, 'bbox') else (0, 0, 0, 0)
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 25
+        
+        # Создаём всплывающее окно
+        self.tooltip_window = tw = Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        
+        # Стиль подсказки
+        label = Label(
+            tw, text=self.text,
+            justify="left",
+            background="#333333",
+            foreground="#19e1a0",
+            relief="solid",
+            borderwidth=1,
+            font=("Helvetica", 9, "italic"),
+            padx=8,
+            pady=4
+        )
+        label.pack()
+    
+    def hide_tip(self, event=None):
+        """Скрывает подсказку"""
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
+            self.tooltip_window = None
 # ====== КОНСТАНТЫ ======
 ICON_SIZE_LIST = 28      # Размер иконки в списке
 # ICON_SIZE_OVERLAY = 48   # Размер иконки в оверлее (увеличил)
@@ -31,12 +75,14 @@ class DebuffMonitorUI(tk.Frame):
     def __init__(self, master, profiles, **kwargs):
         self.profiles = profiles
         self.profile = get_active_profile(profiles) if profiles else None
+        self.was_monitoring_before_hide = False  # 👇 Новый флаг
+        self._is_monitor = True # Помечаем этот фрейм как мониторинг (для utils.py)
         
         super().__init__(master, bg=StyleManager().colors["bg_main"], **kwargs)
         
         self.style = StyleManager()
-        self.window_title = profiles.get("window_title", "") if profiles else ""
-        
+        #self.window_title = profiles.get("window_title", "") if profiles else ""
+        self.window_title = ""
         self.templates = {}
         self.overlays = {}
         self.debuff_check_vars = {}
@@ -78,11 +124,15 @@ class DebuffMonitorUI(tk.Frame):
         self.overlay_pos = DEFAULT_OVERLAY_POS.copy()
         self.saved_enabled_debuffs = set()
 
+        # 👇 Сбрасываем window_title для НОВОГО экземпляра
+        self.window_title = ""
+
         if not self.profile:
             return
 
         monitor_config = self.profile.get("debuff_monitor", {})
 
+        
         # Подставить capture_area (или default)
         if isinstance(monitor_config.get("capture_area", None), dict):
             self.capture_area.update({
@@ -126,40 +176,59 @@ class DebuffMonitorUI(tk.Frame):
 
         if "debuff_monitor" not in self.profile:
             self.profile["debuff_monitor"] = {}
-
+        # 👇 Сохраняем заголовок окна!
+        self.profile["window_title"] = self.window_title
         # Обновляем профиль согласно UI
         self.profile["debuff_monitor"].update({
             "enabled": enabled,
             "capture_area": self.capture_area,
             "overlay_pos": self.overlay_pos,
             "icon_size_overlay": self.icon_size_overlay,  # 👇 сохранение размера иконки оверлея
-            "check_interval": self.check_interval  # 👇 сохранение частоты чтения
+            "check_interval": self.check_interval,  # 👇 сохранение частоты чтения
+            "window_title": self.window_title  # 👇 Дублируем для надёжности
         })
 
         profile_name = self.profiles.get("active_profile")
         if profile_name:
             update_profile(profile_name, self.profile, self.profiles)
 
+    def _on_window_selected(self, event=None):
+        selection = self.window_dropdown.get()
+        self.window_title = selection
+        self.selected_window_text.set(f"Окно: {selection[:30]}...")
+        self.selected_window_rect = self.get_game_window()
+
     def _build_ui(self):
         """Построение интерфейса - КОМПАКТНЫЙ ВАРИАНТ"""
+        # 👇 Создаём главный контейнер с фиксированной структурой
+        main_container = Frame(self, bg=self.style.colors["bg_main"])
+        main_container.pack(fill=BOTH, expand=True)
+        
+        # Верхняя часть (прокручиваемая)
+        scroll_container = Frame(main_container, bg=self.style.colors["bg_main"])
+        scroll_container.pack(fill=BOTH, expand=True)
+        
+        # Нижняя часть (кнопки, фиксировано)
+        bottom_container = Frame(main_container, bg=self.style.colors["bg_main"])
+        bottom_container.pack(fill=BOTH, side=BOTTOM)
         
         # === Заголовок ===
         title = Label(
-            self, text="Мониторинг Дебаффов", 
-            font=("Helvetica", 18, "bold"),  # Уменьшил шрифт
+            scroll_container, text="Мониторинг Дебаффов",  # 👇 scroll_container
+            font=("Helvetica", 18, "bold"),
             fg="#19e1a0", bg=self.style.colors["bg_main"]
         )
-        title.pack(pady=(5, 3))  # Уменьшил отступы
-        self.style.animate_text(title, "Мониторинг Дебаффов", loop=False)  # Отключил анимацию для экономии ресурсов
+        title.pack(pady=(5, 3))
+        self.style.animate_text(title, "Мониторинг Дебаффов", loop=False)
 
-        # === Выбор окна (ЦЕНТРИРОВАНО) ===
-        win_fr = Frame(self, bg=self.style.colors["bg_main"])
+        # === Выбор окна ===
+        win_fr = Frame(scroll_container, bg=self.style.colors["bg_main"])  # 👇 scroll_container
         win_fr.pack(pady=2, fill=BOTH, padx=10)
         
         win_inner = Frame(win_fr, bg=self.style.colors["bg_main"])
         win_inner.pack(anchor='center')
         
-        Label(win_inner, text="Окно:", font=("Helvetica", 9),  # Уменьшил шрифт
+        Label(win_inner, text="Окно:", font=("Helvetica", 9),
               bg=self.style.colors["bg_main"], fg=self.style.colors["fg_main"]).pack(side=LEFT)
         
         self.window_dropdown = ttk.Combobox(win_inner, width=20, state='readonly', font=("Helvetica", 9))
@@ -178,14 +247,15 @@ class DebuffMonitorUI(tk.Frame):
         self.window_dropdown["values"] = []
         self.list_windows()
 
-        # === Область захвата (КОМПАКТНО) ===
+        # === Область захвата ===
         capture_frame = LabelFrame(
-            self, text="Область захвата (%)", 
+            scroll_container, text="Область захвата (%)",  # 👇 scroll_container
             font=("Helvetica", 9, "bold"),
             bg=self.style.colors["bg_main"], fg="#19e1a0",
             padx=5, pady=3
         )
         capture_frame.pack(fill=BOTH, padx=10, pady=2)
+        ToolTip(capture_frame, "Проценты от размера окна игры.\nX,Y — начало области\nW,H — ширина и высота")
         
         capture_grid = Frame(capture_frame, bg=self.style.colors["bg_main"])
         capture_grid.pack()
@@ -198,22 +268,22 @@ class DebuffMonitorUI(tk.Frame):
             var = StringVar(value=str(self.capture_area.get(lbl.lower().replace("%",""), default)))
             self.capture_vars[lbl] = var
             
-            entry = Entry(capture_grid, textvariable=var, width=4,  # Уменьшил ширину
+            entry = Entry(capture_grid, textvariable=var, width=4,
                          font=("Fixedsys", 8), bg=self.style.colors["bg_button"], 
                          fg=self.style.colors["fg_main"], relief="flat", justify="center")
             entry.grid(row=0, column=i*2+1, padx=1)
             entry.bind("<FocusOut>", lambda e: self._on_capture_area_change())
 
-        # === Позиция оверлея (КОМПАКТНО) ===
+        # === Позиция оверлея ===
         overlay_frame = LabelFrame(
-            self, text="Позиция оверлея", 
+            scroll_container, text="Позиция оверлея",  # 👇 scroll_container
             font=("Helvetica", 9, "bold"),
             bg=self.style.colors["bg_main"], fg="#19e1a0",
             padx=5, pady=3
         )
         overlay_frame.pack(fill=BOTH, padx=10, pady=2)
+        ToolTip(overlay_frame, "Где показывать иконки дебаффов.\n↖↗↙↘ — углы экрана\nX,Y — точные координаты")
         
-        # Кнопки-пресеты в 2 ряда для компактности
         preset_fr = Frame(overlay_frame, bg=self.style.colors["bg_main"])
         preset_fr.pack(pady=2)
         
@@ -224,7 +294,6 @@ class DebuffMonitorUI(tk.Frame):
             ("↘", "bottom_right"),
         ]
         
-        # Первый ряд: ↗ ↖
         for i, (text, preset) in enumerate(preset_buttons[:2]):
             btn = Button(
                 preset_fr, text=text, font=("Helvetica", 10),
@@ -236,7 +305,6 @@ class DebuffMonitorUI(tk.Frame):
             btn.bind("<Enter>", self.style.on_hover)
             btn.bind("<Leave>", lambda e: self.style.on_leave(e, self.style.colors["bg_button"], self.style.colors["fg_main"]))
         
-        # Второй ряд: ↘ ↙
         for i, (text, preset) in enumerate(preset_buttons[2:]):
             btn = Button(
                 preset_fr, text=text, font=("Helvetica", 10),
@@ -248,7 +316,6 @@ class DebuffMonitorUI(tk.Frame):
             btn.bind("<Enter>", self.style.on_hover)
             btn.bind("<Leave>", lambda e: self.style.on_leave(e, self.style.colors["bg_button"], self.style.colors["fg_main"]))
         
-        # Ручная настройка - в одну строку
         coords_fr = Frame(overlay_frame, bg=self.style.colors["bg_main"])
         coords_fr.pack(pady=2)
         
@@ -270,9 +337,9 @@ class DebuffMonitorUI(tk.Frame):
                bg=self.style.colors["bg_button"], fg="#19e1a0",
                relief="flat", cursor="hand2", width=4, command=self._save_overlay_settings).pack(side=LEFT, padx=5)
         
-        # === Размер иконки оверлея ===
+        # === Размер иконки ===
         icon_frame = LabelFrame(
-            self, text="Размер иконки (px)", 
+            scroll_container, text="Размер иконки (px)",  # 👇 scroll_container
             font=("Helvetica", 9, "bold"),
             bg=self.style.colors["bg_main"], fg="#19e1a0",
             padx=5, pady=3
@@ -281,6 +348,7 @@ class DebuffMonitorUI(tk.Frame):
 
         icon_inner = Frame(icon_frame, bg=self.style.colors["bg_main"])
         icon_inner.pack(pady=2)
+        ToolTip(icon_frame, "Размер плавающих иконок.\nРекомендуется: 48-80 px\nМин: 16, Макс: 200")
 
         Label(icon_inner, text="Размер:", font=("Helvetica", 8), 
             bg=self.style.colors["bg_main"], fg=self.style.colors["fg_main"]).pack(side=LEFT, padx=5)
@@ -290,7 +358,7 @@ class DebuffMonitorUI(tk.Frame):
                                     font=("Fixedsys", 9), bg=self.style.colors["bg_button"], 
                                     fg=self.style.colors["fg_main"], relief="flat", justify="center")
         self.icon_size_entry.pack(side=LEFT, padx=5)
-        # Разрешаем только цифры
+        
         def validate_int(P):
             return P.isdigit() or P == ""
         vcmd = (self.register(validate_int), '%P')
@@ -303,7 +371,7 @@ class DebuffMonitorUI(tk.Frame):
 
         # === Частота сканирования ===
         scan_frame = LabelFrame(
-            self, text="Частота сканирования (сек)", 
+            scroll_container, text="Частота сканирования (сек)",  # 👇 scroll_container
             font=("Helvetica", 9, "bold"),
             bg=self.style.colors["bg_main"], fg="#19e1a0",
             padx=5, pady=3
@@ -312,6 +380,7 @@ class DebuffMonitorUI(tk.Frame):
 
         scan_inner = Frame(scan_frame, bg=self.style.colors["bg_main"])
         scan_inner.pack(pady=2)
+        ToolTip(scan_frame, "Как часто проверять экран.\n0.1-0.3 — быстро (высокая нагрузка)\n0.5-1.0 — нормально\n2.0+ — экономно")
 
         Label(scan_inner, text="Интервал:", font=("Helvetica", 8), 
             bg=self.style.colors["bg_main"], fg=self.style.colors["fg_main"]).pack(side=LEFT, padx=5)
@@ -322,7 +391,6 @@ class DebuffMonitorUI(tk.Frame):
                                         fg=self.style.colors["fg_main"], relief="flat", justify="center")
         self.check_interval_entry.pack(side=LEFT, padx=5)
 
-        # Валидация только цифры и точка
         def validate_float(P):
             return (P.isdigit() or P == "" or (P.replace('.', '', 1).isdigit() and P.count('.') <= 1))
         vcmd = (self.register(validate_float), '%P')
@@ -333,14 +401,14 @@ class DebuffMonitorUI(tk.Frame):
             relief="flat", cursor="hand2", width=4, 
             command=self._apply_check_interval).pack(side=LEFT, padx=5)
         
-        # === Статус и кнопки (В ОДНУ ЛИНИЮ) ===
-        ctrl_fr = Frame(self, bg=self.style.colors["bg_main"])
+        # === Статус и кнопки ===
+        ctrl_fr = Frame(scroll_container, bg=self.style.colors["bg_main"])  # 👇 scroll_container
         ctrl_fr.pack(pady=3)
         
         Label(ctrl_fr, textvariable=self.status_text, 
               bg=self.style.colors["bg_main"], fg=self.style.colors["fg_main"], 
               font=("Fixedsys", 8), width=20).pack(side=LEFT, padx=5)
-        # === кнопочка отладки ===
+        
         self.debug_btn = Button(
             ctrl_fr, text="🟢 Отладка OFF", font=("Helvetica", 9, "bold"), 
             bg=self.style.colors["bg_button"], fg="#f39c12",
@@ -350,6 +418,7 @@ class DebuffMonitorUI(tk.Frame):
         self.debug_btn.pack(side=LEFT, padx=3)
         self.debug_btn.bind("<Enter>", self.style.on_hover)
         self.debug_btn.bind("<Leave>", lambda e: self.style.on_leave(e, self.style.colors["bg_button"], "#f39c12"))
+        
         self.start_btn = Button(
             ctrl_fr, text="▶ Старт", font=("Helvetica", 9, "bold"), 
             bg=self.style.colors["bg_button"], fg="#19e1a0",
@@ -370,17 +439,17 @@ class DebuffMonitorUI(tk.Frame):
         self.stop_btn.bind("<Enter>", self.style.on_hover)
         self.stop_btn.bind("<Leave>", lambda e: self.style.on_leave(e, self.style.colors["bg_button"], "#d42d52"))
 
-        # === Список дебаффов (ФИКСИРОВАННАЯ ВЫСОТА) ===
-        Label(self, text="Дебаффы:", font=("Helvetica", 9, "bold"),
+        # === Список дебаффов ===
+        Label(scroll_container, text="Дебаффы:", font=("Helvetica", 9, "bold"),  # 👇 scroll_container
               bg=self.style.colors["bg_main"], fg=self.style.colors["fg_main"]).pack(pady=2)
         
-        debuff_frame = Frame(self, bg=self.style.colors["bg_main"])
-        debuff_frame.pack(fill=BOTH, expand=False, padx=10, pady=2)  # expand=False!
+        debuff_frame = Frame(scroll_container, bg=self.style.colors["bg_main"])  # 👇 scroll_container
+        debuff_frame.pack(fill=BOTH, expand=False, padx=10, pady=2)
 
         self.debuff_canvas = tk.Canvas(
             debuff_frame, borderwidth=0, bg=self.style.colors["bg_main"], 
             relief=tk.FLAT, highlightthickness=0, selectborderwidth=0, takefocus=False,
-            height=180  # 👇 ФИКСИРОВАННАЯ ВЫСОТА (примерно 4-5 иконок)
+            height=180
         )
         self.debuff_list_fr = Frame(self.debuff_canvas, bg=self.style.colors["bg_main"])
         
@@ -396,21 +465,48 @@ class DebuffMonitorUI(tk.Frame):
         self.debuff_list_fr.bind("<Configure>", lambda e: self.debuff_canvas.configure(scrollregion=self.debuff_canvas.bbox("all")))
         self.debuff_canvas.bind_all("<MouseWheel>", self._on_mousewheel)
 
-        # === Кнопки внизу (В ОДНУ ЛИНИЮ) ===
-        btn_fr = Frame(self, bg=self.style.colors["bg_main"])
-        btn_fr.pack(pady=3)
+        # === Кнопки внизу ===
+        btn_fr = Frame(bottom_container, bg=self.style.colors["bg_main"])  # 👇 bottom_container
+        btn_fr.pack(pady=10)
+
+        btn_inner = Frame(btn_fr, bg=self.style.colors["bg_main"])
+        btn_inner.pack()
         
-        Button(btn_fr, text="Сохранить", font=("Helvetica", 9),
+        Button(btn_inner, text="Сохранить", font=("Helvetica", 9),  # 👇 btn_inner
                bg=self.style.colors["bg_button"], fg="#19e1a0",
                relief="flat", cursor="hand2", width=12,
-               command=self._save_all_settings).pack(side=LEFT, padx=2)
+               command=self._save_all_settings).pack(side=LEFT, padx=5)
         
-        Button(btn_fr, text="← Назад", font=("Helvetica", 9, "bold"),
+        Button(btn_inner, text="← Назад", font=("Helvetica", 9, "bold"),  # 👇 btn_inner
                bg=self.style.colors["bg_button"], fg="#d42d52",
                relief="flat", cursor="hand2", width=12,
-               command=self._go_back).pack(side=LEFT, padx=10)
+               command=self._go_back).pack(side=LEFT, padx=5)
 
         self.err_label = None
+
+    def refresh_window_list(self):
+        """Пересобирает интерфейс мониторинга"""
+        # Сохраняем текущее состояние
+        was_monitoring = self.monitoring
+        current_window = self.window_title
+        
+        # Обновляем список окон
+        self.list_windows()
+        
+        # Восстанавливаем выбор
+        if current_window and current_window in self.window_list:
+            idx = self.window_list.index(current_window)
+            self.window_dropdown.current(idx)
+            self._on_window_selected()
+        else:
+            # 👈 Сбрасываем на пустое значение, если окно не найдено
+            self.window_dropdown.set("")
+            self.window_title = ""
+        
+        # Обновляем статус
+        if was_monitoring and not self.monitoring:
+            if self.get_game_window():
+                self.status_text.set("✓ Мониторинг активен")
 
     def _apply_icon_size(self):
         """Применяет новый размер иконки"""
@@ -636,9 +732,12 @@ class DebuffMonitorUI(tk.Frame):
         messagebox.showinfo("Сохранено", "Настройки сохранены в профиль", parent=self)
 
     def _go_back(self):
-        """Возврат в главное меню БЕЗ остановки мониторинга"""
+        """Возврат в главное меню"""
         self._save_profile_settings()
-        navigate_to("Главная", self.master, self, self.profiles)
+        # Просто скрываем интерфейс
+        self.pack_forget()
+        from utils import navigate_to
+        navigate_to("Главная", self.master, self.master, self.profiles)
 
     def _show_error(self, msg):
         if not self.err_label:
@@ -740,12 +839,6 @@ class DebuffMonitorUI(tk.Frame):
                 self.selected_window_text.set("Нет открытых окон")
         except Exception as e:
             self.selected_window_text.set(f"Ошибка: {e}")
-
-    def _on_window_selected(self, event=None):
-        selection = self.window_dropdown.get()
-        self.window_title = selection
-        self.selected_window_text.set(f"Окно: {selection[:30]}...")
-        self.selected_window_rect = self.get_game_window()
 
     def get_game_window(self):
         try:
@@ -912,28 +1005,36 @@ class DebuffMonitorUI(tk.Frame):
             self.hide_overlay(name)
 
     def _monitor_loop(self):
+        """Основной цикл мониторинга - РАБОТАЕТ В ФОНЕ"""
         self.status_text.set("Поиск окна игры...")
+        print(f"🔍 [MONITOR] Запуск, window_title='{self.window_title}', поток: {threading.current_thread().name}")
         
+        # Поиск окна игры
         attempts = 0
         while not self._stop_event.is_set():
-            win = self.get_game_window()
-            if win:
-                self.selected_window_rect = win
-                self.status_text.set("✓ Мониторинг активен")
+            window = self.get_game_window()
+            if window:
+                self.selected_window_rect = window
+                self.master.after(0, lambda: self.status_text.set("✓ Мониторинг активен"))
+                print(f"✅ [MONITOR] Окно найдено: {self.window_title}")
                 break
             attempts += 1
-            if attempts > 3:
-                self.status_text.set("Ожидание окна...")
+            if attempts > 3 and attempts % 10 == 0:
+                self.master.after(0, lambda: self.status_text.set("Ожидание окна..."))
             time.sleep(1.0)
         
         last_visible = set()
+        cycle_count = 0
         
         try:
             while not self._stop_event.is_set():
+                cycle_count += 1
+                if cycle_count % 100 == 0:
+                    print(f"🟢 [MONITOR] Цикл {cycle_count}, поток жив")
+                
                 window = self.get_game_window()
                 if not window:
-                    self.status_text.set("⚠ Окно потеряно")
-                    self.update_overlays(set())
+                    self.master.after(0, lambda: self.update_overlays(set()))
                     time.sleep(self.check_interval)
                     continue
                 
@@ -941,19 +1042,101 @@ class DebuffMonitorUI(tk.Frame):
                 active = self.find_debuffs(scene)
                 
                 if active != last_visible:
-                    self.status_text.set(f"Найдено: {len(active)}" if active else "Дебаффов нет")
-                    self.update_overlays(active)
-                    self._update_result_in_list(active)
+                    def update_ui():
+                        try:
+                            self.update_overlays(active)
+                            self._update_result_in_list(active)
+                            if active:
+                                self.status_text.set(f"Дебаффов: {len(active)}")
+                            else:
+                                self.status_text.set("Дебаффов нет")
+                        except:
+                            pass
+                    self.master.after(0, update_ui)
                     last_visible = set(active)
                 
                 time.sleep(self.check_interval)
                 
         except Exception as e:
-            if self.debug_mode:
-                print(f"Monitor error: {e}")
-            self.status_text.set("❌ Ошибка мониторинга")
+            print(f"💥 [MONITOR] Ошибка: {e}")
         finally:
-            self.stop_all_overlays()
+            self.master.after(0, lambda: self.stop_all_overlays())
+            print("🛑 [MONITOR] Поток остановлен")
+
+    def save_monitoring_state(self):
+        """Сохраняет состояние мониторинга для восстановления"""
+        return {
+            'monitoring': self.monitoring,
+            'window_title': self.window_title,
+            'active_debuffs': self.active_debuffs.copy() if self.active_debuffs else set()
+        }
+    
+    def restore_monitoring_state(self, state):
+        """Восстанавливает состояние мониторинга"""
+        if state and state.get('monitoring'):
+            self.window_title = state.get('window_title', '')
+            if self.window_title and self.window_title in self.window_list:
+                idx = self.window_list.index(self.window_title)
+                self.window_dropdown.current(idx)
+            # Не перезапускаем мониторинг, просто обновляем UI
+            self.status_text.set("✓ Мониторинг активен (фон)")
+            self.start_btn.config(state=tk.DISABLED)
+            self.stop_btn.config(state=tk.NORMAL)
+
+    def refresh_ui_state(self):
+        """Обновляет состояние UI при возврате из фона"""
+        # Обновляем список окон
+        self.refresh_window_list()
+        
+        # Восстанавливаем состояние кнопок
+        if self.monitoring:
+            self.start_btn.config(state=tk.DISABLED)
+            self.stop_btn.config(state=tk.NORMAL)
+            self.status_text.set("✓ Мониторинг активен")
+            print(f"🔄 [UI] Состояние восстановлено, поток жив: {self.monitor_thread and self.monitor_thread.is_alive()}")
+        else:
+            self.start_btn.config(state=tk.NORMAL)
+            self.stop_btn.config(state=tk.DISABLED)
+            self.status_text.set("Мониторинг остановлен")
+        
+        # Если мониторинг активен, но поток мёртв - перезапускаем
+        if self.monitoring and (self.monitor_thread is None or not self.monitor_thread.is_alive()):
+            print(f"⚠️ [UI] Поток мёртв, перезапуск мониторинга")
+            self.monitoring = False
+            self.start_monitoring()
+
+    def _update_ui_safe(self, active):
+        """Безопасное обновление UI из основного потока"""
+        try:
+            self.update_overlays(active)
+            self._update_result_in_list(active)
+        except:
+            pass
+
+    def refresh_ui_state(self):
+        """Обновляет состояние UI при возврате из фона"""
+        print(f"🔄 [UI] refresh_ui_state вызван, monitoring={self.monitoring}")
+        
+        # Обновляем список окон
+        self.refresh_window_list()
+        
+        # Восстанавливаем состояние кнопок
+        if self.monitoring:
+            self.start_btn.config(state=tk.DISABLED)
+            self.stop_btn.config(state=tk.NORMAL)
+            self.status_text.set("✓ Мониторинг активен")
+            print(f"   Статус: активен, поток жив: {self.monitor_thread and self.monitor_thread.is_alive()}")
+        else:
+            self.start_btn.config(state=tk.NORMAL)
+            self.stop_btn.config(state=tk.DISABLED)
+            self.status_text.set("Мониторинг остановлен")
+            print(f"   Статус: остановлен")
+        
+        # Если мониторинг активен, но поток мёртв - перезапускаем
+        if self.monitoring and (self.monitor_thread is None or not self.monitor_thread.is_alive()):
+            print(f"⚠️ [UI] Поток мёртв, перезапуск мониторинга")
+            self.monitoring = False
+            self.start_monitoring()
 
     def _update_result_in_list(self, active: set):
         for child in self.debuff_list_fr.winfo_children():
@@ -1001,11 +1184,34 @@ class DebuffMonitorUI(tk.Frame):
                 if isinstance(grand, Label):
                     grand.config(fg=self.style.colors["fg_main"])
 
+    def show_monitor(self):
+        """Показывает интерфейс мониторинга и обновляет список окон"""
+
+        print(f"📱 [UI] show_monitor вызван, monitoring={self.monitoring}")
+        self.pack(fill="both", expand=True)
+        self.lift()
+        self.refresh_window_list()  # 👈 Важно!
+        # 👇 Восстанавливаем мониторинг, если он был активен
+        if self.was_monitoring_before_hide and not self.monitoring:
+            # Не перезапускаем поток, просто обновляем UI
+            self.status_text.set("✓ Мониторинг активен (фон)")
+            self.start_btn.config(state=tk.DISABLED, fg=self.style.colors["fg_main"])
+            self.stop_btn.config(state=tk.NORMAL)
+        # Проверяем, жив ли поток мониторинга
+        if self.monitoring and (self.monitor_thread is None or not self.monitor_thread.is_alive()):
+            # Поток умер, перезапускаем
+            self.monitoring = False
+            self.start_monitoring()
+        
+        # Сбрасываем флаг
+        self.was_monitoring_before_hide = False
+
     def on_close(self):
         self._save_profile_settings()
-        self.stop_monitoring()
+        if self.monitoring:
+            self.stop_monitoring()
         self.stop_all_overlays()
-        self.master.destroy()
+        #self.master.destroy()
 
 
 if __name__ == "__main__":

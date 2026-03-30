@@ -3,11 +3,12 @@ from utils import navigate_to, StyleManager
 
 def main_menu(root, frame, profiles):
     style = StyleManager()
+    
     def navigate_to_option(option):
         navigate_to(option, root, frame, profiles)
     
-    for widget in frame.winfo_children():
-        widget.destroy()
+    # НЕ ПРОВЕРЯЕМ на дубликаты - просто создаём меню
+    # (navigate_to уже очистил фрейм)
     
     title = tk.Label(frame, text="PW Launcher", font=("Helvetica", 24, "bold"), fg="#19e1a0", bg="#222222")
     title.pack(pady=20)

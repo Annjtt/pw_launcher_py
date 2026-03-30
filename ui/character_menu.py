@@ -76,8 +76,8 @@ def character_menu(root, frame, profiles):
         # поэтому здесь не добавляем пустой объект в список
         add_character_menu(root, frame, None, profiles)
     
-    for widget in frame.winfo_children():
-        widget.destroy()
+    #for widget in frame.winfo_children(): убрал уничтожение мониторинга
+    #    widget.destroy()
     
     header = tk.Label(frame, text="Персонажи", font=("Helvetica", 20, "bold"), bg="#222222", fg="#19e1a0")
     header.pack(pady=20)
