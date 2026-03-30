@@ -14,7 +14,6 @@ def load_config():
     if os.path.exists(config_file):
         with open(config_file, "r") as file:
             data = json.load(file)
-        # Нормализация структуры: гарантируем наличие ключа icon у каждого персонажа
         profiles = data.get("profiles", {})
         for profile in profiles.values():
             characters = profile.get("characters", [])
@@ -91,25 +90,77 @@ def open_telegram():
     webbrowser.open("https://t.me/santhouse")
 
 def navigate_to(option, root, frame, profiles):
-    if option == "Персонажи":
-        from ui.character_menu import character_menu
-        character_menu(root, frame, profiles)
-    elif option == "Мониторинг":
+    """Навигация по меню"""
+    if option == "Мониторинг":
         from ui.debuff_monitor import DebuffMonitorUI
-        # Очищаем фрейм перед добавлением новой страницы
-        for widget in frame.winfo_children():
-            widget.destroy()
-        monitor_page = DebuffMonitorUI(frame, profiles)
-        monitor_page.pack(fill="both", expand=True)
+        print(f"🔍 [NAV] Поиск существующего монитора в {frame.winfo_children()}")
+        # Получаем MainApplication из root
+        app = None
+        for child in root.winfo_children():
+            if hasattr(child, 'monitor_instance'):
+                app = child
+                break
+        if not app:
+            # Если не нашли, ищем по классу
+            if hasattr(root, 'monitor_instance'):
+                app = root
+
+        # Проверяем существующий мониторинг
+        existing_monitor = None
+        if app and hasattr(app, 'monitor_instance') and app.monitor_instance:
+            existing_monitor = app.monitor_instance
+            print(f"✅ Найден существующий монитор в app") 
+        for w in frame.winfo_children():
+            w.pack_forget()
+        
+        # Скрываем всё остальное
+        for w in frame.winfo_children():
+            if w != existing_monitor:
+                w.pack_forget()
+        
+        if existing_monitor:
+            # Показываем существующий мониторинг
+            existing_monitor.pack(fill="both", expand=True)
+            existing_monitor.lift()
+            existing_monitor.refresh_window_list()
+            existing_monitor.refresh_ui_state()
+            print(f"🔄 [MONITOR] Восстановлен интерфейс, поток жив: {existing_monitor.monitor_thread and existing_monitor.monitor_thread.is_alive()}")
+        else:
+            # Создаём новый
+            monitor_page = DebuffMonitorUI(frame, profiles)
+            monitor_page.pack(fill="both", expand=True)
+            monitor_page.refresh_window_list()
+            
+            # Сохраняем ссылку в app
+            if app:
+                app.monitor_instance = monitor_page
+                app.monitor_frame = frame
+            print(f"🆕 [MONITOR] Создан новый экземпляр")
+    
+    elif option == "Персонажи":
+        from ui.character_menu import character_menu
+        for w in frame.winfo_children():
+            w.destroy()
+        character_menu(root, frame, profiles)
+    
     elif option == "Профиль":
         from ui.profile_menu import profile_menu
+        for w in frame.winfo_children():
+            w.destroy()
         profile_menu(root, frame, profiles)
+    
     elif option == "Настройки":
         from ui.settings_menu import settings_menu
+        for w in frame.winfo_children():
+            w.destroy()
         settings_menu(root, frame, profiles)
+    
     elif option == "Главная":
         from ui.main_menu import main_menu
+        for w in frame.winfo_children():
+            w.destroy()
         main_menu(root, frame, profiles)
+
 
 class MainApplication:
     def __init__(self):
@@ -117,12 +168,16 @@ class MainApplication:
         self.root.title("PW Launcher")
         self.root.configure(bg="#222222")
         self.root.attributes("-alpha", 0.97)
-        self.root.iconbitmap(default="assets/icon.ico")
+        try:
+            self.root.iconbitmap(default="assets/icon.ico")
+        except:
+            pass
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
-        x = (screen_width - 1) // 2
-        y = (screen_height - 480) // 2
-        self.root.geometry(f"460x590+{x}+{y}")
+        x = (screen_width - 460) // 2
+        y = (screen_height - 650) // 2
+        self.root.geometry(f"460x650+{x}+{y}")
+        
         self.loading = True
         self.loading_bar_animating = False
         self.show_loading_screen()
@@ -140,7 +195,7 @@ class MainApplication:
         )
         self.loading_label.pack(expand=True)
 
-        # Полоска загрузки — под надписью загрузки!
+        # Полоска загрузки
         self.loading_bar_canvas = tk.Canvas(
             self.root,
             width=220,
@@ -148,7 +203,7 @@ class MainApplication:
             bg="#444444",
             highlightthickness=0
         )
-        self.loading_bar_canvas.pack(pady=(1, 40))  # отступ сверху небольшой после надписи
+        self.loading_bar_canvas.pack(pady=(1, 40))
         self._loading_bar_rect = self.loading_bar_canvas.create_rectangle(
             0, 0, 0, 10, fill="#19e1a0", outline="#19e1a0"
         )
@@ -175,6 +230,7 @@ class MainApplication:
 
         style = StyleManager()
         style.animate_text(self.loading_label, "Loading...", loop=True)
+        
         # Version at the very bottom
         self.version_label = tk.Label(
             self.root,
@@ -184,6 +240,7 @@ class MainApplication:
             bg="#222222"
         )
         self.version_label.pack(side="bottom", pady=(0, 20))
+        
         # Footer note
         self.footer_label = tk.Label(
             self.root,
@@ -193,17 +250,12 @@ class MainApplication:
             bg="#222222"
         )
         self.footer_label.pack(side="bottom", pady=(0, 2))
+        
         self.root.after(1900, self.transition_to_main_menu)
 
     def transition_to_main_menu(self):
         self.loading = False
         self.loading_bar_animating = False
-        if hasattr(self, 'text_animation'):
-            self.text_animation.stop()
-        self.show_main_menu()
-
-    def transition_to_main_menu(self):
-        self.loading = False
         if hasattr(self, 'text_animation'):
             self.text_animation.stop()
         self.show_main_menu()
