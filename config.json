@@ -32,9 +32,11 @@
                 },
                 "overlay_pos": {
                     "preset": "custom",
-                    "x": 1652,
-                    "y": 80
-                }
+                    "x": 1300,
+                    "y": 20
+                },
+                "icon_size_overlay": 50,
+                "check_interval": 0.5
             }
         }
     }

@@ -24,6 +24,7 @@ ICON_SIZE_LIST = 28      # Размер иконки в списке
 DEFAULT_ICON_SIZE_OVERLAY = 48   # Значение по умолчанию
 DEFAULT_CAPTURE_AREA = {"x": 30, "y": 10, "w": 40, "h": 15}
 DEFAULT_OVERLAY_POS = {"preset": "top_right", "x": None, "y": None}
+DEFAULT_CHECK_INTERVAL = 0.3  # 👇 Частота сканирования (секунды)
 
 
 class DebuffMonitorUI(tk.Frame):
@@ -48,9 +49,9 @@ class DebuffMonitorUI(tk.Frame):
         self.debug_mode = False
         
         self.capture_area = DEFAULT_CAPTURE_AREA.copy()
-        self.overlay_pos = DEFAULT_OVERLAY_POS.copy()
-        # Размер иконки оверлея (загружается из профиля)
-        self.icon_size_overlay = DEFAULT_ICON_SIZE_OVERLAY
+        self.overlay_pos = DEFAULT_OVERLAY_POS.copy()        
+        self.icon_size_overlay = DEFAULT_ICON_SIZE_OVERLAY  # Размер иконки оверлея (загружается из профиля)      
+        self.check_interval = DEFAULT_CHECK_INTERVAL  # Частота сканирования дебаффов
         
         self.status_text = StringVar(value="")
         self.selected_window_text = StringVar(value="(Окно не выбрано)")
@@ -113,6 +114,9 @@ class DebuffMonitorUI(tk.Frame):
         # 👇 Загрузка размера иконки из профиля
         if monitor_config.get("icon_size_overlay"): 
             self.icon_size_overlay = monitor_config["icon_size_overlay"]
+        # 👇 Загрузка интервала сканирования из профиля
+        if monitor_config.get("check_interval"):
+            self.check_interval = monitor_config["check_interval"]
 
     def _save_profile_settings(self):
         if not self.profile or not self.profiles:
@@ -128,7 +132,8 @@ class DebuffMonitorUI(tk.Frame):
             "enabled": enabled,
             "capture_area": self.capture_area,
             "overlay_pos": self.overlay_pos,
-            "icon_size_overlay": self.icon_size_overlay  # 👇 Добавили эту строку
+            "icon_size_overlay": self.icon_size_overlay,  # 👇 сохранение размера иконки оверлея
+            "check_interval": self.check_interval  # 👇 сохранение частоты чтения
         })
 
         profile_name = self.profiles.get("active_profile")
@@ -295,6 +300,38 @@ class DebuffMonitorUI(tk.Frame):
             bg=self.style.colors["bg_button"], fg="#19e1a0",
             relief="flat", cursor="hand2", width=4, 
             command=self._apply_icon_size).pack(side=LEFT, padx=5)
+
+        # === Частота сканирования ===
+        scan_frame = LabelFrame(
+            self, text="Частота сканирования (сек)", 
+            font=("Helvetica", 9, "bold"),
+            bg=self.style.colors["bg_main"], fg="#19e1a0",
+            padx=5, pady=3
+        )
+        scan_frame.pack(fill=BOTH, padx=10, pady=2)
+
+        scan_inner = Frame(scan_frame, bg=self.style.colors["bg_main"])
+        scan_inner.pack(pady=2)
+
+        Label(scan_inner, text="Интервал:", font=("Helvetica", 8), 
+            bg=self.style.colors["bg_main"], fg=self.style.colors["fg_main"]).pack(side=LEFT, padx=5)
+
+        self.check_interval_var = StringVar(value=str(self.check_interval))
+        self.check_interval_entry = Entry(scan_inner, textvariable=self.check_interval_var, width=5, 
+                                        font=("Fixedsys", 9), bg=self.style.colors["bg_button"], 
+                                        fg=self.style.colors["fg_main"], relief="flat", justify="center")
+        self.check_interval_entry.pack(side=LEFT, padx=5)
+
+        # Валидация только цифры и точка
+        def validate_float(P):
+            return (P.isdigit() or P == "" or (P.replace('.', '', 1).isdigit() and P.count('.') <= 1))
+        vcmd = (self.register(validate_float), '%P')
+        self.check_interval_entry.config(validate='key', validatecommand=vcmd)
+
+        Button(scan_inner, text="OK", font=("Helvetica", 8, "bold"),
+            bg=self.style.colors["bg_button"], fg="#19e1a0",
+            relief="flat", cursor="hand2", width=4, 
+            command=self._apply_check_interval).pack(side=LEFT, padx=5)
         
         # === Статус и кнопки (В ОДНУ ЛИНИЮ) ===
         ctrl_fr = Frame(self, bg=self.style.colors["bg_main"])
@@ -402,6 +439,21 @@ class DebuffMonitorUI(tk.Frame):
         except ValueError:
             messagebox.showerror("Ошибка", "Введите корректное число", parent=self)
             self.icon_size_var.set(str(self.icon_size_overlay))
+
+    def _apply_check_interval(self):
+        """Применяет новый интервал сканирования"""
+        try:
+            new_interval = float(self.check_interval_var.get())
+            if 0.1 <= new_interval <= 5.0:  # Ограничение от 0.1 до 5 секунд
+                self.check_interval = new_interval
+                self._save_profile_settings()
+                messagebox.showinfo("Успех", f"Интервал изменен на {new_interval} сек", parent=self)
+            else:
+                messagebox.showwarning("Внимание", "Интервал должен быть от 0.1 до 5.0 сек", parent=self)
+                self.check_interval_var.set(str(self.check_interval))
+        except ValueError:
+            messagebox.showerror("Ошибка", "Введите корректное число", parent=self)
+            self.check_interval_var.set(str(self.check_interval))
 
     def create_debug_windows(self):
         """Создает окна для отладочных рамок"""
