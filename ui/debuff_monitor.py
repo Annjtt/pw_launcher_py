@@ -20,7 +20,8 @@ from utils import get_active_profile, update_profile, navigate_to
 
 # ====== КОНСТАНТЫ ======
 ICON_SIZE_LIST = 28      # Размер иконки в списке
-ICON_SIZE_OVERLAY = 48   # Размер иконки в оверлее (увеличил)
+# ICON_SIZE_OVERLAY = 48   # Размер иконки в оверлее (увеличил)
+DEFAULT_ICON_SIZE_OVERLAY = 48   # Значение по умолчанию
 DEFAULT_CAPTURE_AREA = {"x": 30, "y": 10, "w": 40, "h": 15}
 DEFAULT_OVERLAY_POS = {"preset": "top_right", "x": None, "y": None}
 
@@ -48,6 +49,8 @@ class DebuffMonitorUI(tk.Frame):
         
         self.capture_area = DEFAULT_CAPTURE_AREA.copy()
         self.overlay_pos = DEFAULT_OVERLAY_POS.copy()
+        # Размер иконки оверлея (загружается из профиля)
+        self.icon_size_overlay = DEFAULT_ICON_SIZE_OVERLAY
         
         self.status_text = StringVar(value="")
         self.selected_window_text = StringVar(value="(Окно не выбрано)")
@@ -107,6 +110,9 @@ class DebuffMonitorUI(tk.Frame):
             self.overlay_x_var.set(str(self.overlay_pos["x"]))
         if self.overlay_y_var is not None and self.overlay_pos.get("y") is not None:
             self.overlay_y_var.set(str(self.overlay_pos["y"]))
+        # 👇 Загрузка размера иконки из профиля
+        if monitor_config.get("icon_size_overlay"): 
+            self.icon_size_overlay = monitor_config["icon_size_overlay"]
 
     def _save_profile_settings(self):
         if not self.profile or not self.profiles:
@@ -121,7 +127,8 @@ class DebuffMonitorUI(tk.Frame):
         self.profile["debuff_monitor"].update({
             "enabled": enabled,
             "capture_area": self.capture_area,
-            "overlay_pos": self.overlay_pos
+            "overlay_pos": self.overlay_pos,
+            "icon_size_overlay": self.icon_size_overlay  # 👇 Добавили эту строку
         })
 
         profile_name = self.profiles.get("active_profile")
@@ -257,6 +264,38 @@ class DebuffMonitorUI(tk.Frame):
         Button(coords_fr, text="OK", font=("Helvetica", 8, "bold"),
                bg=self.style.colors["bg_button"], fg="#19e1a0",
                relief="flat", cursor="hand2", width=4, command=self._save_overlay_settings).pack(side=LEFT, padx=5)
+        
+        # === Размер иконки оверлея ===
+        icon_frame = LabelFrame(
+            self, text="Размер иконки (px)", 
+            font=("Helvetica", 9, "bold"),
+            bg=self.style.colors["bg_main"], fg="#19e1a0",
+            padx=5, pady=3
+        )
+        icon_frame.pack(fill=BOTH, padx=10, pady=2)
+
+        icon_inner = Frame(icon_frame, bg=self.style.colors["bg_main"])
+        icon_inner.pack(pady=2)
+
+        Label(icon_inner, text="Размер:", font=("Helvetica", 8), 
+            bg=self.style.colors["bg_main"], fg=self.style.colors["fg_main"]).pack(side=LEFT, padx=5)
+
+        self.icon_size_var = StringVar(value=str(self.icon_size_overlay))
+        self.icon_size_entry = Entry(icon_inner, textvariable=self.icon_size_var, width=5, 
+                                    font=("Fixedsys", 9), bg=self.style.colors["bg_button"], 
+                                    fg=self.style.colors["fg_main"], relief="flat", justify="center")
+        self.icon_size_entry.pack(side=LEFT, padx=5)
+        # Разрешаем только цифры
+        def validate_int(P):
+            return P.isdigit() or P == ""
+        vcmd = (self.register(validate_int), '%P')
+        self.icon_size_entry.config(validate='key', validatecommand=vcmd)
+
+        Button(icon_inner, text="OK", font=("Helvetica", 8, "bold"),
+            bg=self.style.colors["bg_button"], fg="#19e1a0",
+            relief="flat", cursor="hand2", width=4, 
+            command=self._apply_icon_size).pack(side=LEFT, padx=5)
+        
         # === Статус и кнопки (В ОДНУ ЛИНИЮ) ===
         ctrl_fr = Frame(self, bg=self.style.colors["bg_main"])
         ctrl_fr.pack(pady=3)
@@ -336,6 +375,34 @@ class DebuffMonitorUI(tk.Frame):
 
         self.err_label = None
 
+    def _apply_icon_size(self):
+        """Применяет новый размер иконки"""
+        try:
+            new_size = int(self.icon_size_var.get())
+            if 16 <= new_size <= 200:  # Ограничение разумных значений
+                self.icon_size_overlay = new_size
+                self._save_profile_settings()  # Сразу сохраняем в профиль
+                
+                # 👇 1. Сначала скрываем все активные оверлеи (пока ссылки ещё целые!)
+                if self.monitoring:
+                    self.stop_all_overlays()
+                
+                # 👇 2. Теперь безопасно перезагружаем изображения с новым размером
+                self.load_overlay_images()
+                
+                # 👇 3. Если мониторинг активен — пересоздаём оверлеи с новым размером
+                if self.monitoring:
+                    for name in self.active_debuffs:
+                        self.show_overlay(name)
+                
+                messagebox.showinfo("Успех", f"Размер изменен на {new_size}px", parent=self)
+            else:
+                messagebox.showwarning("Внимание", "Размер должен быть от 16 до 200 px", parent=self)
+                self.icon_size_var.set(str(self.icon_size_overlay))
+        except ValueError:
+            messagebox.showerror("Ошибка", "Введите корректное число", parent=self)
+            self.icon_size_var.set(str(self.icon_size_overlay))
+
     def create_debug_windows(self):
         """Создает окна для отладочных рамок"""
         try:
@@ -395,13 +462,13 @@ class DebuffMonitorUI(tk.Frame):
                 ox, oy = self.overlay_pos["x"], self.overlay_pos["y"]
             else:
                 positions = {
-                    "top_right": (sw - ICON_SIZE_OVERLAY - 20, 20),
+                    "top_right": (sw - self.icon_size_overlay - 20, 20),
                     "top_left": (20, 20),
-                    "bottom_right": (sw - ICON_SIZE_OVERLAY - 20, sh - ICON_SIZE_OVERLAY - 20),
-                    "bottom_left": (20, sh - ICON_SIZE_OVERLAY - 20)
+                    "bottom_right": (sw - self.icon_size_overlay - 20, sh - self.icon_size_overlay - 20),
+                    "bottom_left": (20, sh - self.icon_size_overlay - 20)
                 }
                 ox, oy = positions.get(self.overlay_pos.get("preset", "top_right"), (sw - 100, 20))
-            ow, oh = ICON_SIZE_OVERLAY, ICON_SIZE_OVERLAY
+            ow, oh = self.icon_size_overlay, self.icon_size_overlay
         
         if hasattr(self, 'green_border'):
             self.green_border.geometry(f"{ow}x{oh}+{ox}+{oy}")
@@ -470,10 +537,10 @@ class DebuffMonitorUI(tk.Frame):
         sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
         
         positions = {
-            "top_right": (sw - ICON_SIZE_OVERLAY - 20, 20),
+            "top_right": (sw - self.icon_size_overlay - 20, 20),
             "top_left": (20, 20),
-            "bottom_right": (sw - ICON_SIZE_OVERLAY - 20, sh - ICON_SIZE_OVERLAY - 20),
-            "bottom_left": (20, sh - ICON_SIZE_OVERLAY - 20)
+            "bottom_right": (sw - self.icon_size_overlay - 20, sh - self.icon_size_overlay - 20),
+            "bottom_left": (20, sh - self.icon_size_overlay - 20)
         }
         
         if preset in positions:
@@ -714,7 +781,7 @@ class DebuffMonitorUI(tk.Frame):
         
         if pil_img:
             # Ресайз для оверлея (48x48)
-            overlay_img = pil_img.resize((ICON_SIZE_OVERLAY, ICON_SIZE_OVERLAY), Image.Resampling.LANCZOS)
+            overlay_img = pil_img.resize((self.icon_size_overlay, self.icon_size_overlay), Image.Resampling.LANCZOS)
             overlay_tk_img = ImageTk.PhotoImage(overlay_img)
             
             lbl = Label(overlay, image=overlay_tk_img, bg="black")
@@ -733,15 +800,15 @@ class DebuffMonitorUI(tk.Frame):
             pos_x, pos_y = self.overlay_pos["x"], self.overlay_pos["y"]
         else:
             positions = {
-                "top_right": (sw - ICON_SIZE_OVERLAY - 20, 20),
+                "top_right": (sw - self.icon_size_overlay - 20, 20),
                 "top_left": (20, 20),
-                "bottom_right": (sw - ICON_SIZE_OVERLAY - 20, sh - ICON_SIZE_OVERLAY - 20),
-                "bottom_left": (20, sh - ICON_SIZE_OVERLAY - 20)
+                "bottom_right": (sw - self.icon_size_overlay - 20, sh - self.icon_size_overlay - 20),
+                "bottom_left": (20, sh - self.icon_size_overlay - 20)
             }
             pos_x, pos_y = positions.get(self.overlay_pos.get("preset", "top_right"), (sw - 100, 20))
         
         # Новый расчет смещения: теперь делаем отступ влево от основной иконки
-        offset = list(self.overlays.keys()).index(debuff_name) * (ICON_SIZE_OVERLAY + 5)
+        offset = list(self.overlays.keys()).index(debuff_name) * (self.icon_size_overlay + 5)
         pos_x -= offset  # Двигаем каждую дополнительную иконку влево от основного положения
 
         # По вертикали больше не сдвигаем, только горизонтальное выравнивание
