@@ -5,6 +5,8 @@
 /start.bat
 /web
 __pycache__/
+*.py[cod]
+*$py.class
 /debuff_monitor — копия.py
 /ui/__pycache__
 /config.json
