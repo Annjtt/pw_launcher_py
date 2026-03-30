@@ -447,32 +447,50 @@ class DebuffMonitorUI(tk.Frame):
         cap_h = int(h * self.capture_area["h"] / 100)
         
         if hasattr(self, 'red_border'):
-            self.red_border.geometry(f"{cap_w}x{cap_h}+{cap_x}+{cap_y}")
-            self.red_border.deiconify()
+            try:
+                self.red_border.geometry(f"{cap_w}x{cap_h}+{cap_x}+{cap_y}")
+                self.red_border.deiconify()
+            except:
+                pass
         
-        # Зеленая рамка - область вывода
-        if hasattr(self, 'overlay_win'):
-            ox = self.overlay_win.winfo_x()
-            oy = self.overlay_win.winfo_y()
-            ow = self.overlay_win.winfo_width()
-            oh = self.overlay_win.winfo_height()
-        else:
-            sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
-            if self.overlay_pos.get("preset") == "custom" and self.overlay_pos.get("x") is not None:
-                ox, oy = self.overlay_pos["x"], self.overlay_pos["y"]
+        # Зеленая рамка - область вывода, защита от ошибок. 
+        try:
+            if hasattr(self, 'overlay_win') and self.overlay_win:
+                try:
+                    # Пытаемся получить координаты. Если окно уничтожено — будет ошибка
+                    ox = self.overlay_win.winfo_x()
+                    oy = self.overlay_win.winfo_y()
+                    ow = self.overlay_win.winfo_width()
+                    oh = self.overlay_win.winfo_height()
+                except tk.TclError:
+                    # Окно уничтожено, сбрасываем ссылку
+                    self.overlay_win = None
+                    ox, oy, ow, oh = None, None, None, None
             else:
-                positions = {
-                    "top_right": (sw - self.icon_size_overlay - 20, 20),
-                    "top_left": (20, 20),
-                    "bottom_right": (sw - self.icon_size_overlay - 20, sh - self.icon_size_overlay - 20),
-                    "bottom_left": (20, sh - self.icon_size_overlay - 20)
-                }
-                ox, oy = positions.get(self.overlay_pos.get("preset", "top_right"), (sw - 100, 20))
-            ow, oh = self.icon_size_overlay, self.icon_size_overlay
-        
-        if hasattr(self, 'green_border'):
-            self.green_border.geometry(f"{ow}x{oh}+{ox}+{oy}")
-            self.green_border.deiconify()
+                ox, oy, ow, oh = None, None, None, None
+
+            # Если ссылка сбросилась или окна нет — считаем координаты по пресету
+            if ox is None:
+                sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
+                if self.overlay_pos.get("preset") == "custom" and self.overlay_pos.get("x") is not None:
+                    ox, oy = self.overlay_pos["x"], self.overlay_pos["y"]
+                else:
+                    positions = {
+                        "top_right": (sw - self.icon_size_overlay - 20, 20),
+                        "top_left": (20, 20),
+                        "bottom_right": (sw - self.icon_size_overlay - 20, sh - self.icon_size_overlay - 20),
+                        "bottom_left": (20, sh - self.icon_size_overlay - 20)
+                    }
+                    ox, oy = positions.get(self.overlay_pos.get("preset", "top_right"), (sw - 100, 20))
+                ow, oh = self.icon_size_overlay, self.icon_size_overlay
+            # Обновляем зеленую рамку
+            if hasattr(self, 'green_border'):
+                self.green_border.geometry(f"{ow}x{oh}+{ox}+{oy}")
+                self.green_border.deiconify()
+        except Exception as e:
+             # На случай любых других ошибок — просто игнорируем, чтобы не спамить в консоль
+            if self.debug_mode:
+                print(f"Debug border update error: {e}")       
     
     def hide_debug_borders(self):
         """Скрывает отладочные рамки"""
