@@ -276,7 +276,7 @@ class DebuffMonitorUI(tk.Frame):
 
         # === Позиция оверлея ===
         overlay_frame = LabelFrame(
-            scroll_container, text="Позиция оверлея",  # 👇 scroll_container
+            scroll_container, text="Позиция оверлея", 
             font=("Helvetica", 9, "bold"),
             bg=self.style.colors["bg_main"], fg="#19e1a0",
             padx=5, pady=3
@@ -284,59 +284,54 @@ class DebuffMonitorUI(tk.Frame):
         overlay_frame.pack(fill=BOTH, padx=10, pady=2)
         ToolTip(overlay_frame, "Где показывать иконки дебаффов.\n↖↗↙↘ — углы экрана\nX,Y — точные координаты")
         
-        preset_fr = Frame(overlay_frame, bg=self.style.colors["bg_main"])
-        preset_fr.pack(pady=2)
         
+        # Одна строка: кнопки углов слева, координаты справа
+        row_fr = Frame(overlay_frame, bg=self.style.colors["bg_main"])
+        row_fr.pack(pady=2, fill=BOTH)
+
+        # ЛЕВАЯ ЧАСТЬ - кнопки углов
+        corners_fr = Frame(row_fr, bg=self.style.colors["bg_main"])
+        corners_fr.pack(side=LEFT, padx=(0, 15))
+
         preset_buttons = [
             ("↖", "top_left"),
             ("↗", "top_right"),
             ("↙", "bottom_left"),
             ("↘", "bottom_right"),
         ]
-        
-        for i, (text, preset) in enumerate(preset_buttons[:2]):
+
+        for i, (text, preset) in enumerate(preset_buttons):
             btn = Button(
-                preset_fr, text=text, font=("Helvetica", 10),
+                corners_fr, text=text, font=("Helvetica", 10),
                 bg=self.style.colors["bg_button"], fg=self.style.colors["fg_main"],
-                relief="flat", cursor="hand2", width=6,
+                relief="flat", cursor="hand2", width=4,
                 command=lambda p=preset: self._set_overlay_preset(p)
             )
-            btn.grid(row=0, column=i, padx=2)
+            btn.pack(side=LEFT, padx=2)
             btn.bind("<Enter>", self.style.on_hover)
             btn.bind("<Leave>", lambda e: self.style.on_leave(e, self.style.colors["bg_button"], self.style.colors["fg_main"]))
-        
-        for i, (text, preset) in enumerate(preset_buttons[2:]):
-            btn = Button(
-                preset_fr, text=text, font=("Helvetica", 10),
-                bg=self.style.colors["bg_button"], fg=self.style.colors["fg_main"],
-                relief="flat", cursor="hand2", width=6,
-                command=lambda p=preset: self._set_overlay_preset(p)
-            )
-            btn.grid(row=1, column=i, padx=2, pady=2)
-            btn.bind("<Enter>", self.style.on_hover)
-            btn.bind("<Leave>", lambda e: self.style.on_leave(e, self.style.colors["bg_button"], self.style.colors["fg_main"]))
-        
-        coords_fr = Frame(overlay_frame, bg=self.style.colors["bg_main"])
-        coords_fr.pack(pady=2)
-        
+
+        # ПРАВАЯ ЧАСТЬ - координаты
+        coords_fr = Frame(row_fr, bg=self.style.colors["bg_main"])
+        coords_fr.pack(side=RIGHT)
+
         Label(coords_fr, text="X:", font=("Helvetica", 8), 
-              bg=self.style.colors["bg_main"], fg=self.style.colors["fg_main"]).pack(side=LEFT, padx=2)
-        
+            bg=self.style.colors["bg_main"], fg=self.style.colors["fg_main"]).pack(side=LEFT, padx=2)
+
         Entry(coords_fr, textvariable=self.overlay_x_var, width=5, 
-              font=("Fixedsys", 8), bg=self.style.colors["bg_button"], 
-              fg=self.style.colors["fg_main"], relief="flat", justify="center").pack(side=LEFT)
-        
+            font=("Fixedsys", 8), bg=self.style.colors["bg_button"], 
+            fg=self.style.colors["fg_main"], relief="flat", justify="center").pack(side=LEFT)
+
         Label(coords_fr, text="Y:", font=("Helvetica", 8), 
-              bg=self.style.colors["bg_main"], fg=self.style.colors["fg_main"]).pack(side=LEFT, padx=(5, 0))
-        
+            bg=self.style.colors["bg_main"], fg=self.style.colors["fg_main"]).pack(side=LEFT, padx=(5, 2))
+
         Entry(coords_fr, textvariable=self.overlay_y_var, width=5, 
-              font=("Fixedsys", 8), bg=self.style.colors["bg_button"], 
-              fg=self.style.colors["fg_main"], relief="flat", justify="center").pack(side=LEFT)
-        
+            font=("Fixedsys", 8), bg=self.style.colors["bg_button"], 
+            fg=self.style.colors["fg_main"], relief="flat", justify="center").pack(side=LEFT)
+
         Button(coords_fr, text="OK", font=("Helvetica", 8, "bold"),
-               bg=self.style.colors["bg_button"], fg="#19e1a0",
-               relief="flat", cursor="hand2", width=4, command=self._save_overlay_settings).pack(side=LEFT, padx=5)
-        
+            bg=self.style.colors["bg_button"], fg="#19e1a0",
+            relief="flat", cursor="hand2", width=4, command=self._save_overlay_settings).pack(side=LEFT, padx=(5, 0))
         # === Размер иконки ===
         icon_frame = LabelFrame(
             scroll_container, text="Размер иконки (px)",  # 👇 scroll_container
@@ -1112,31 +1107,6 @@ class DebuffMonitorUI(tk.Frame):
             self._update_result_in_list(active)
         except:
             pass
-
-    def refresh_ui_state(self):
-        """Обновляет состояние UI при возврате из фона"""
-        print(f"🔄 [UI] refresh_ui_state вызван, monitoring={self.monitoring}")
-        
-        # Обновляем список окон
-        self.refresh_window_list()
-        
-        # Восстанавливаем состояние кнопок
-        if self.monitoring:
-            self.start_btn.config(state=tk.DISABLED)
-            self.stop_btn.config(state=tk.NORMAL)
-            self.status_text.set("✓ Мониторинг активен")
-            print(f"   Статус: активен, поток жив: {self.monitor_thread and self.monitor_thread.is_alive()}")
-        else:
-            self.start_btn.config(state=tk.NORMAL)
-            self.stop_btn.config(state=tk.DISABLED)
-            self.status_text.set("Мониторинг остановлен")
-            print(f"   Статус: остановлен")
-        
-        # Если мониторинг активен, но поток мёртв - перезапускаем
-        if self.monitoring and (self.monitor_thread is None or not self.monitor_thread.is_alive()):
-            print(f"⚠️ [UI] Поток мёртв, перезапуск мониторинга")
-            self.monitoring = False
-            self.start_monitoring()
 
     def _update_result_in_list(self, active: set):
         for child in self.debuff_list_fr.winfo_children():
