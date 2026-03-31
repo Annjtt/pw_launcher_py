@@ -28,10 +28,12 @@ class MainApplication:
         # 👇 Сохраняем ссылку на мониторинг
         self.monitor_instance = None
         self.monitor_frame = None  # Фрейм, в котором находится монитор
-        
         self.loading = True
         self.loading_bar_animating = False
         self.show_loading_screen()
+        self.monitor_instance = None
+        self.monitor_frame = None
+        
 
     def show_loading_screen(self):
         for widget in self.main_frame.winfo_children():
@@ -70,6 +72,7 @@ class MainApplication:
         
         from ui.main_menu import main_menu
         main_menu(self.root, self.main_frame, self.profiles)
+        
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("PW Launcher")

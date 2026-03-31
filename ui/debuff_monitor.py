@@ -77,7 +77,7 @@ class DebuffMonitorUI(tk.Frame):
         self.profile = get_active_profile(profiles) if profiles else None
         self.was_monitoring_before_hide = False  # 👇 Новый флаг
         self._is_monitor = True # Помечаем этот фрейм как мониторинг (для utils.py)
-        
+        self._is_first_load = True # Флаг для отслеживания первой загрузки мониторинга
         super().__init__(master, bg=StyleManager().colors["bg_main"], **kwargs)
         
         self.style = StyleManager()
@@ -114,9 +114,7 @@ class DebuffMonitorUI(tk.Frame):
         
         self._load_profile_settings()
         self._build_ui()
-        self.load_templates()
-        self.load_overlay_images()
-        self._populate_debuff_list()
+
 
     def _load_profile_settings(self):
         # Always reset to defaults first!
@@ -729,10 +727,30 @@ class DebuffMonitorUI(tk.Frame):
     def _go_back(self):
         """Возврат в главное меню"""
         self._save_profile_settings()
-        # Просто скрываем интерфейс
-        self.pack_forget()
-        from utils import navigate_to
-        navigate_to("Главная", self.master, self.master, self.profiles)
+        if self.monitoring:
+            self.stop_monitoring()
+        
+        # Находим главное окно
+        root = self.master
+        while hasattr(root, 'master') and root.master:
+            root = root.master
+        
+        # Находим main_frame
+        main_frame = None
+        for child in root.winfo_children():
+            if isinstance(child, tk.Frame) and hasattr(child, 'winfo_children'):
+                main_frame = child
+                break
+        
+        if main_frame:
+            # Очищаем и показываем главное меню
+            for w in main_frame.winfo_children():
+                w.destroy()
+            from ui.main_menu import main_menu
+            main_menu(root, main_frame, self.profiles)
+        else:
+            from utils import navigate_to
+            navigate_to("Главная", root, root, self.profiles)
 
     def _show_error(self, msg):
         if not self.err_label:
@@ -787,13 +805,20 @@ class DebuffMonitorUI(tk.Frame):
             self.overlays[debuff_name] = {**overlay_info, "overlay_window": None}
 
     def _populate_debuff_list(self):
+        print(f"🔧 [UI] _populate_debuff_list вызван, templates={len(self.templates)}")
+        if not hasattr(self, 'debuff_list_fr'):
+            print(f"🔧 [UI] Ошибка: debuff_list_fr не существует!")
+            return
+
         for c in self.debuff_list_fr.winfo_children():
             c.destroy()
         
         if not self.templates:
+            print(f"🔧 [UI] Нет шаблонов")
             return
         
         for name in sorted(self.templates):
+            print(f"🔧 [UI] Добавляем дебафф: {name}")
             row = Frame(self.debuff_list_fr, bg=self.style.colors["bg_main"])
             row.pack(fill=BOTH, pady=2)
             
@@ -1154,26 +1179,59 @@ class DebuffMonitorUI(tk.Frame):
                 if isinstance(grand, Label):
                     grand.config(fg=self.style.colors["fg_main"])
 
-    def show_monitor(self):
-        """Показывает интерфейс мониторинга и обновляет список окон"""
+    def _load_all_data(self):
+        """Загружает все данные (шаблоны, картинки, список)"""
+        if self.templates:
+            return  # уже загружено
+        self.load_templates()
+        self.load_overlay_images()
+        self._populate_debuff_list()
 
+    def show_monitor(self, app=None):
+        """Показывает интерфейс мониторинга с загрузкой"""
         print(f"📱 [UI] show_monitor вызван, monitoring={self.monitoring}")
+        
+        # Сохраняем ссылку на MainApplication
+        self.main_app = app
+        
+        if self.main_app:
+            # Показываем загрузку
+            self.main_app.show_loading_for_monitor(self._on_load_complete)
+        else:
+            # Если нет ссылки, показываем сразу
+            self._load_all_data()
+            self._show_monitor_ui()
+    
+    def _on_load_complete(self):
+        """Вызывается после завершения загрузки"""
+        if self.templates:  # Если уже загружено, пропускаем
+            self._show_monitor_ui()
+            return
+        # Загружаем элементы в фоне
+        self.load_templates()
+        self.load_overlay_images()
+        self._populate_debuff_list()
+        
+        # Показываем UI
+        self._load_all_data()
+        self._show_monitor_ui()
+    
+    def _show_monitor_ui(self):
+        """Показывает интерфейс мониторинга"""
         self.pack(fill="both", expand=True)
         self.lift()
-        self.refresh_window_list()  # 👈 Важно!
-        # 👇 Восстанавливаем мониторинг, если он был активен
+        self.update_idletasks()
+        self.refresh_window_list()
+        
         if self.was_monitoring_before_hide and not self.monitoring:
-            # Не перезапускаем поток, просто обновляем UI
             self.status_text.set("✓ Мониторинг активен (фон)")
             self.start_btn.config(state=tk.DISABLED, fg=self.style.colors["fg_main"])
             self.stop_btn.config(state=tk.NORMAL)
-        # Проверяем, жив ли поток мониторинга
+        
         if self.monitoring and (self.monitor_thread is None or not self.monitor_thread.is_alive()):
-            # Поток умер, перезапускаем
             self.monitoring = False
             self.start_monitoring()
         
-        # Сбрасываем флаг
         self.was_monitoring_before_hide = False
 
     def on_close(self):
@@ -1182,30 +1240,3 @@ class DebuffMonitorUI(tk.Frame):
             self.stop_monitoring()
         self.stop_all_overlays()
         #self.master.destroy()
-
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    root.title("Debuff Monitor — Test")
-    root.configure(bg="#222222")
-    root.geometry("440x600")
-    
-    mock_profiles = {
-        "active_profile": "Test",
-        "profiles": {
-            "Test": {
-                "game_path": "",
-                "characters": [],
-                "debuff_monitor": {
-                    "enabled": [],
-                    "capture_area": DEFAULT_CAPTURE_AREA,
-                    "overlay_pos": DEFAULT_OVERLAY_POS
-                }
-            }
-        }
-    }
-    
-    app = DebuffMonitorUI(root, mock_profiles)
-    app.pack(fill=BOTH, expand=1, padx=10, pady=7)
-    root.protocol("WM_DELETE_WINDOW", app.on_close)
-    root.mainloop()

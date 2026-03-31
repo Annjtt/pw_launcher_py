@@ -8,8 +8,7 @@ from tkinter import messagebox, filedialog, simpledialog
 from styles import StyleManager
 
 config_file = "config.json"
-_navigation_lock = False
-
+_navigation_lock = False  # Глобальный флаг для предотвращения рекурсии
 
 def load_config():
     if os.path.exists(config_file):
@@ -27,16 +26,13 @@ def load_config():
         save_config(default_profiles)
         return default_profiles
 
-
 def save_config(profiles):
     with open(config_file, "w") as file:
         json.dump(profiles, file, indent=4)
 
-
 def get_active_profile(profiles):
     profile_name = profiles.get("active_profile")
     return profiles["profiles"].get(profile_name) if profile_name else None
-
 
 def set_active_profile(profile_name, root, frame, profiles):
     profiles["active_profile"] = profile_name
@@ -44,11 +40,9 @@ def set_active_profile(profile_name, root, frame, profiles):
     from ui.character_menu import character_menu
     character_menu(root, frame, profiles)
 
-
 def update_profile(profile_name, data, profiles):
     profiles["profiles"][profile_name] = data
     save_config(profiles)
-
 
 def delete_profile(profile_name, root, frame, profiles):
     if profile_name in profiles["profiles"]:
@@ -59,7 +53,6 @@ def delete_profile(profile_name, root, frame, profiles):
     else:
         messagebox.showerror("Ошибка", "Профиль не найден.")
 
-
 def start_game_async(account, profiles):
     profile = get_active_profile(profiles)
     if not profile:
@@ -69,7 +62,6 @@ def start_game_async(account, profiles):
     if not game_path or not os.path.exists(game_path):
         messagebox.showerror("Ошибка", "Путь к клиенту игры не найден!")
         return
-
     def run_game():
         game_dir = os.path.dirname(game_path)
         os.chdir(game_dir)
@@ -89,7 +81,6 @@ def start_game_async(account, profiles):
         )
 
         subprocess.run(powershell_command, shell=True)
-
     threading.Thread(target=run_game, daemon=True).start()
 
 def open_telegram_channel():
@@ -98,27 +89,97 @@ def open_telegram_channel():
 def open_telegram():
     webbrowser.open("https://t.me/santhouse")
 
+# def navigate_to(option, root, frame, profiles):
+#     """Навигация по меню"""
+#     if option == "Мониторинг":
+#         from ui.debuff_monitor import DebuffMonitorUI
+#         print(f"🔍 [NAV] Поиск существующего монитора в {frame.winfo_children()}")
+#         # Получаем MainApplication из root
+#         app = None
+#         for child in root.winfo_children():
+#             if hasattr(child, 'monitor_instance'):
+#                 app = child
+#                 break
+#         if not app:
+#             # Если не нашли, ищем по классу
+#             if hasattr(root, 'monitor_instance'):
+#                 app = root
+
+#         # Проверяем существующий мониторинг
+#         existing_monitor = None
+#         if app and hasattr(app, 'monitor_instance') and app.monitor_instance:
+#             existing_monitor = app.monitor_instance
+#             print(f"✅ Найден существующий монитор в app") 
+#         for w in frame.winfo_children():
+#             w.pack_forget()
+        
+#         # Скрываем всё остальное
+#         for w in frame.winfo_children():
+#             if w != existing_monitor:
+#                 w.pack_forget()
+        
+#         if existing_monitor:
+#             # Показываем существующий мониторинг
+#             existing_monitor.pack(fill="both", expand=True)
+#             existing_monitor.lift()
+#             existing_monitor.refresh_window_list()
+#             existing_monitor.refresh_ui_state()
+#             print(f"🔄 [MONITOR] Восстановлен интерфейс, поток жив: {existing_monitor.monitor_thread and existing_monitor.monitor_thread.is_alive()}")
+#         else:
+#             # Создаём новый
+#             monitor_page = DebuffMonitorUI(frame, profiles)
+#             monitor_page.pack(fill="both", expand=True)
+#             monitor_page.refresh_window_list()
+            
+#             # Сохраняем ссылку в app
+#             if app:
+#                 app.monitor_instance = monitor_page
+#                 app.monitor_frame = frame
+#             print(f"🆕 [MONITOR] Создан новый экземпляр")
+    
+#     elif option == "Персонажи":
+#         from ui.character_menu import character_menu
+#         for w in frame.winfo_children():
+#             w.destroy()
+#         character_menu(root, frame, profiles)
+    
+#     elif option == "Профиль":
+#         from ui.profile_menu import profile_menu
+#         for w in frame.winfo_children():
+#             w.destroy()
+#         profile_menu(root, frame, profiles)
+    
+#     elif option == "Настройки":
+#         from ui.settings_menu import settings_menu
+#         for w in frame.winfo_children():
+#             w.destroy()
+#         settings_menu(root, frame, profiles)
+    
+#     elif option == "Главная":
+#         from ui.main_menu import main_menu
+#         for w in frame.winfo_children():
+#             w.destroy()
+#         main_menu(root, frame, profiles)
+
 def navigate_to(option, root, frame, profiles):
     """Навигация по меню"""
     global _navigation_lock
     if _navigation_lock:
         print(f"⚠️ [NAV] Навигация заблокирована, пропускаем")
         return
-
+    
     _navigation_lock = True
-
+    
     try:
         if option == "Мониторинг":
             from ui.debuff_monitor import DebuffMonitorUI
             print(f"🔍 [NAV] Поиск существующего монитора в {frame.winfo_children()}")
-
             # Находим MainApplication
             app = None
             for child in root.winfo_children():
                 if hasattr(child, 'show_loading_for_monitor'):
                     app = child
                     break
-
             # Ищем существующий монитор
             existing_monitor = None
             for child in frame.winfo_children():
@@ -126,37 +187,37 @@ def navigate_to(option, root, frame, profiles):
                     existing_monitor = child
                     print(f"✅ Найден существующий монитор")
                     break
-
+            
             # Очищаем фрейм
             for w in frame.winfo_children():
                 w.pack_forget()
-
+            
             if existing_monitor:
-                existing_monitor.show_monitor(app)
+                existing_monitor.show_monitor()
                 print(f"🔄 [MONITOR] Восстановлен интерфейс")
             else:
                 monitor_page = DebuffMonitorUI(frame, profiles)
-                monitor_page.show_monitor(app)
+                monitor_page.show_monitor()
                 print(f"🆕 [MONITOR] Создан новый экземпляр")
-
+        
         elif option == "Персонажи":
             from ui.character_menu import character_menu
             for w in frame.winfo_children():
                 w.destroy()
             character_menu(root, frame, profiles)
-
+        
         elif option == "Профиль":
             from ui.profile_menu import profile_menu
             for w in frame.winfo_children():
                 w.destroy()
             profile_menu(root, frame, profiles)
-
+        
         elif option == "Настройки":
             from ui.settings_menu import settings_menu
             for w in frame.winfo_children():
                 w.destroy()
             settings_menu(root, frame, profiles)
-
+        
         elif option == "Главная":
             from ui.main_menu import main_menu
             for w in frame.winfo_children():
@@ -164,7 +225,6 @@ def navigate_to(option, root, frame, profiles):
             main_menu(root, frame, profiles)
     finally:
         _navigation_lock = False
-
 
 class MainApplication:
     def __init__(self):
@@ -181,8 +241,7 @@ class MainApplication:
         x = (screen_width - 460) // 2
         y = (screen_height - 650) // 2
         self.root.geometry(f"460x650+{x}+{y}")
-
-        # 👇 СОЗДАЁМ ГЛАВНЫЙ ФРЕЙМ
+        # 👇 Добавляем main_frame как атрибут класса
         self.main_frame = tk.Frame(self.root, bg="#222222")
         self.main_frame.pack(fill="both", expand=True)
 
@@ -191,7 +250,7 @@ class MainApplication:
         self.show_loading_screen()
 
     def show_loading_screen(self):
-        # Очищаем main_frame
+
         for widget in self.main_frame.winfo_children():
             widget.destroy()
 
@@ -203,10 +262,21 @@ class MainApplication:
             bg="#222222"
         )
         self.loading_label.pack(expand=True)
+        # for widget in self.root.winfo_children():
+        #     widget.destroy()
+
+        # self.loading_label = tk.Label(
+        #     self.root,
+        #     text="Loading...",
+        #     font=("Helvetica", 36, "bold"),
+        #     fg="#dddddd",
+        #     bg="#222222"
+        # )
+        # self.loading_label.pack(expand=True)
 
         # Полоска загрузки
         self.loading_bar_canvas = tk.Canvas(
-            self.main_frame,
+            self.root,
             width=220,
             height=8,
             bg="#444444",
@@ -239,50 +309,36 @@ class MainApplication:
 
         style = StyleManager()
         style.animate_text(self.loading_label, "Loading...", loop=True)
-
+        
         # Version at the very bottom
         self.version_label = tk.Label(
-            self.main_frame,
+            self.root,
             text="v.3.1.2",
             font=("Fixedsys", 10),
             fg="#dedede",
             bg="#222222"
         )
         self.version_label.pack(side="bottom", pady=(0, 20))
-
+        
         # Footer note
         self.footer_label = tk.Label(
-            self.main_frame,
+            self.root,
             text="by santhouse",
             font=("Fixedsys", 15),
             fg="#19e1a0",
             bg="#222222"
         )
         self.footer_label.pack(side="bottom", pady=(0, 2))
-
+        
         self.root.after(1900, self.transition_to_main_menu)
-
-    def transition_to_main_menu(self):
-        self.loading = False
-        self.loading_bar_animating = False
-        if hasattr(self, 'text_animation'):
-            self.text_animation.stop()
-        self.show_main_menu()
-
-    def show_main_menu(self):
-        # Очищаем main_frame
-        for widget in self.main_frame.winfo_children():
-            widget.destroy()
-        self.profiles = load_config()
-        from ui.main_menu import main_menu
-        main_menu(self.root, self.main_frame, self.profiles)
 
     def show_loading_for_monitor(self, callback):
         """Показывает загрузку для мониторинга"""
         # Очищаем main_frame
         for widget in self.main_frame.winfo_children():
             widget.destroy()
-
+        
+        # Показываем загрузку
         self.loading_label = tk.Label(
             self.main_frame,
             text="Загрузка мониторинга...",
@@ -291,7 +347,7 @@ class MainApplication:
             bg="#222222"
         )
         self.loading_label.pack(expand=True)
-
+        
         # Полоска загрузки
         self.loading_bar_canvas = tk.Canvas(
             self.main_frame,
@@ -304,11 +360,11 @@ class MainApplication:
         self._loading_bar_rect = self.loading_bar_canvas.create_rectangle(
             0, 0, 0, 10, fill="#19e1a0", outline="#19e1a0"
         )
-
+        
         self._bar_fill = 0
         self._bar_max = 220
         self.loading_bar_animating = True
-
+        
         def animate_bar():
             if not self.loading_bar_animating:
                 return
@@ -320,11 +376,30 @@ class MainApplication:
                 self.main_frame.after(20, animate_bar)
             else:
                 self.loading_bar_animating = False
+                # После завершения анимации вызываем callback
                 callback()
-
+        
         animate_bar()
+        
+        # Обновляем интерфейс
         self.main_frame.update_idletasks()
-
+    
     def hide_loading(self):
         """Скрывает загрузку"""
         self.loading_bar_animating = False
+
+    def transition_to_main_menu(self):
+        self.loading = False
+        self.loading_bar_animating = False
+        if hasattr(self, 'text_animation'):
+            self.text_animation.stop()
+        self.show_main_menu()
+
+    def show_main_menu(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+        self.profiles = load_config()
+        main_frame = tk.Frame(self.root, bg="#222222")
+        main_frame.pack(fill="both", expand=True)
+        from ui.main_menu import main_menu
+        main_menu(self.root, main_frame, self.profiles)
