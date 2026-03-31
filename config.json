@@ -18,7 +18,11 @@
                 }
             ],
             "debuff_monitor": {
-                "enabled": [],
+                "enabled": [
+                    "PDF",
+                    "dragons",
+                    "fire"
+                ],
                 "capture_area": {
                     "x": 34,
                     "y": 9,

@@ -114,11 +114,15 @@ def navigate_to(option, root, frame, profiles):
 
             # Находим MainApplication
             app = None
+            print(f"🔍 [NAV] Ищем MainApplication среди дочерних root.winfo_children():")
             for child in root.winfo_children():
+                print(f"    - child: {child}, hasattr show_loading_for_monitor: {hasattr(child, 'show_loading_for_monitor')}")
                 if hasattr(child, 'show_loading_for_monitor'):
                     app = child
+                    print(f"✅ [NAV] Найден MainApplication: {app}")
                     break
-
+            if not app:
+                print(f"⚠️ [NAV] MainApplication НЕ НАЙДЕН!")
             # Ищем существующий монитор
             existing_monitor = None
             for child in frame.winfo_children():
@@ -279,9 +283,11 @@ class MainApplication:
 
     def show_loading_for_monitor(self, callback):
         """Показывает загрузку для мониторинга"""
+        print(f"🔄 [LOAD] show_loading_for_monitor вызван")
         # Очищаем main_frame
         for widget in self.main_frame.winfo_children():
             widget.destroy()
+        print(f"🔄 [LOAD] main_frame очищен")
 
         self.loading_label = tk.Label(
             self.main_frame,
@@ -320,10 +326,13 @@ class MainApplication:
                 self.main_frame.after(20, animate_bar)
             else:
                 self.loading_bar_animating = False
+                print(f"🔄 [LOAD] Анимация завершена, вызываем callback")
                 callback()
 
         animate_bar()
         self.main_frame.update_idletasks()
+        self.main_frame.update()
+        print(f"🔄 [LOAD] main_frame обновлен")
 
     def hide_loading(self):
         """Скрывает загрузку"""
