@@ -31,12 +31,20 @@ def character_menu(root, frame, profiles):
     checkbox_vars = []
     frame.icon_images = []
     
+    # def toggle_character(index):
+    #     if index in selected_characters:
+    #         selected_characters.remove(index)
+    #     else:
+    #         selected_characters.append(index)
+
     def toggle_character(index):
         if index in selected_characters:
             selected_characters.remove(index)
+            checkbox_vars[index].set(0)
         else:
             selected_characters.append(index)
-    
+            checkbox_vars[index].set(1)
+
     def select_all_characters():
         if len(selected_characters) == len(characters):
             selected_characters.clear()
@@ -180,9 +188,27 @@ def character_menu(root, frame, profiles):
         return img
 
     for i, char in enumerate(characters):
-        char_frame = tk.Frame(scrollable_frame, bg="#333333")
+        char_frame = tk.Frame(
+            scrollable_frame, 
+            bg="#333333",
+            highlightthickness=2,           # толщина рамки
+            highlightbackground="#333333",   # цвет рамки по умолчанию
+            highlightcolor="#19e1a0"         # цвет рамки при фокусе (опционально)
+        )
         # отступы как раньше (pady=5, padx=10), но внутри скролл-контейнера
         char_frame.pack(pady=5, padx=10, fill="x")
+        char_frame.config(cursor="hand2") # курсор-рука, мб удалить.
+        # При наведении — меняем цвет рамки
+        def on_enter(e, f=char_frame):
+            f.config(highlightbackground="#19e1a0")  # яркий зелёный при наведении
+        
+        def on_leave(e, f=char_frame):
+            f.config(highlightbackground="#333333")  # возвращаем исходный цвет
+        char_frame.bind("<Enter>", on_enter)
+        char_frame.bind("<Leave>", on_leave)
+        # Клик по строке переключает чекбокс
+        char_frame.bind("<Button-1>", lambda e, idx=i: toggle_character(idx))
+
         char_info = f"{char.get('char', '')}"
         var = tk.IntVar()
         checkbox_vars.append(var)
