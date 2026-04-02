@@ -216,7 +216,7 @@ class DebuffMonitorUI(tk.Frame):
             fg="#19e1a0", bg=self.style.colors["bg_main"]
         )
         title.pack(pady=(5, 3))
-        self.style.animate_text(title, "Мониторинг Дебаффов", loop=False)
+        self.style.animate_text(title, "Мониторинг Дебаффов", loop=True)
 
         # === Выбор окна ===
         win_fr = Frame(scroll_container, bg=self.style.colors["bg_main"])  # 👇 scroll_container
