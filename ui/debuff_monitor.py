@@ -115,7 +115,6 @@ class DebuffMonitorUI(tk.Frame):
         self._load_profile_settings()
         self._build_ui()
 
-
     def _load_profile_settings(self):
         # Always reset to defaults first!
         self.capture_area = DEFAULT_CAPTURE_AREA.copy()
@@ -842,10 +841,28 @@ class DebuffMonitorUI(tk.Frame):
             Label(row, text=name, bg=self.style.colors["bg_main"], 
                   fg=self.style.colors["fg_main"], font=("Helvetica", 10)).pack(side=LEFT, padx=2)
 
+    def get_character_names(self):
+        """Возвращает список имён персонажей из активного профиля"""
+        if not self.profile:
+            return []
+        
+        characters = self.profile.get("characters", [])
+        names = []
+        for char in characters:
+            char_name = char.get("char", "")
+            if char_name:
+                names.append(char_name)
+        return names
+
     def list_windows(self):
         try:
-            wins = gw.getAllTitles()
-            filtered = [w for w in wins if w.strip()]
+            # Получаем имена персонажей из профиля
+            character_names = self.get_character_names()
+            all_windows = gw.getAllTitles()
+            filtered = []
+            for w in all_windows:
+                if w.strip() and w.strip() in character_names:
+                    filtered.append(w.strip())
             self.window_list = filtered
             self.window_dropdown["values"] = filtered
             

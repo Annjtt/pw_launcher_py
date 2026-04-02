@@ -112,16 +112,12 @@ def navigate_to(option, root, frame, profiles):
             from ui.debuff_monitor import DebuffMonitorUI
             print(f"🔍 [NAV] Поиск существующего монитора в {frame.winfo_children()}")
 
-            # Находим MainApplication
+            # Получаем MainApplication из root
             app = None
-            print(f"🔍 [NAV] Ищем MainApplication среди дочерних root.winfo_children():")
-            for child in root.winfo_children():
-                print(f"    - child: {child}, hasattr show_loading_for_monitor: {hasattr(child, 'show_loading_for_monitor')}")
-                if hasattr(child, 'show_loading_for_monitor'):
-                    app = child
-                    print(f"✅ [NAV] Найден MainApplication: {app}")
-                    break
-            if not app:
+            if hasattr(root, 'show_loading_for_monitor'):
+                app = root
+                print(f"✅ [NAV] Найден MainApplication (root)")
+            else:
                 print(f"⚠️ [NAV] MainApplication НЕ НАЙДЕН!")
             # Ищем существующий монитор
             existing_monitor = None
