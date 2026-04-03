@@ -30,9 +30,9 @@
                     "h": 15
                 },
                 "overlay_pos": {
-                    "preset": "custom",
-                    "x": 1650,
-                    "y": 80
+                    "preset": "top_left",
+                    "x": 20,
+                    "y": 20
                 },
                 "icon_size_overlay": 50,
                 "check_interval": 0.5,

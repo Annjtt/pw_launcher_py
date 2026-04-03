@@ -179,8 +179,8 @@ class MainApplication:
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
         x = (screen_width - 460) // 2
-        y = (screen_height - 650) // 2
-        self.root.geometry(f"460x650+{x}+{y}")
+        y = (screen_height - 600) // 2
+        self.root.geometry(f"460x600+{x}+{y}")
 
         # 👇 СОЗДАЁМ ГЛАВНЫЙ ФРЕЙМ
         self.main_frame = tk.Frame(self.root, bg="#222222")

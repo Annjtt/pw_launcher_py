@@ -79,7 +79,7 @@ def profile_menu(root, frame, profiles):
             profile_frame = tk.Frame(
                 scrollable_frame,
                 bg="#333333",
-                highlightthickness=2,
+                highlightthickness=1,
                 highlightbackground="#333333",
                 highlightcolor="#19e1a0"
             )
@@ -130,7 +130,7 @@ def profile_menu(root, frame, profiles):
     
     # Кнопки внизу
     btn_frame = tk.Frame(frame, bg="#222222")
-    btn_frame.pack(pady=10, fill="x")
+    btn_frame.pack(pady=20, fill="x")
     
     btn_create_profile = tk.Button(btn_frame, text="➕ Создать новый профиль", command=create_new_profile,
                                    font=("Helvetica", 11, "bold"), bg="#333333", fg="#dedede", relief="flat")

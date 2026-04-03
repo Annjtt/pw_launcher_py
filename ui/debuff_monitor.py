@@ -238,21 +238,19 @@ class DebuffMonitorUI(tk.Frame):
         ToolTip(overlay_frame, "Где показывать иконки дебаффов.\n↖↗↙↘ — углы экрана\nX,Y — точные координаты")
         
         
-        # Одна строка: кнопки углов слева, координаты справа
+        # Две строки: кнопки углов (2x2), координаты справа
         row_fr = Frame(overlay_frame, bg=self.style.colors["bg_main"])
         row_fr.pack(pady=2, fill=BOTH)
 
-        # ЛЕВАЯ ЧАСТЬ - кнопки углов
+        # ЛЕВАЯ ЧАСТЬ - кнопки углов в 2 строки
         corners_fr = Frame(row_fr, bg=self.style.colors["bg_main"])
-        corners_fr.pack(side=LEFT, padx=(0, 15))
+        corners_fr.pack(side=LEFT, padx=(70, 15), anchor="n")
 
+        # Размещаем кнопки углов сеткой 2x2
         preset_buttons = [
-            ("↖", "top_left"),
-            ("↗", "top_right"),
-            ("↙", "bottom_left"),
-            ("↘", "bottom_right"),
+            ("↖", "top_left"),    ("↗", "top_right"),
+            ("↙", "bottom_left"), ("↘", "bottom_right"),
         ]
-
         for i, (text, preset) in enumerate(preset_buttons):
             btn = Button(
                 corners_fr, text=text, font=("Helvetica", 10),
@@ -260,13 +258,14 @@ class DebuffMonitorUI(tk.Frame):
                 relief="flat", cursor="hand2", width=4,
                 command=lambda p=preset: self._set_overlay_preset(p)
             )
-            btn.pack(side=LEFT, padx=2)
+            # Размещаем по строкам: первые две налево, вторые две вниз
+            btn.grid(row=i//2, column=i%2, padx=2, pady=1)
             btn.bind("<Enter>", self.style.on_hover)
             btn.bind("<Leave>", lambda e: self.style.on_leave(e, self.style.colors["bg_button"], self.style.colors["fg_main"]))
 
         # ПРАВАЯ ЧАСТЬ - координаты
         coords_fr = Frame(row_fr, bg=self.style.colors["bg_main"])
-        coords_fr.pack(side=RIGHT)
+        coords_fr.pack(side=LEFT)
 
         Label(coords_fr, text="X:", font=("Helvetica", 8), 
             bg=self.style.colors["bg_main"], fg=self.style.colors["fg_main"]).pack(side=LEFT, padx=2)
@@ -397,17 +396,13 @@ class DebuffMonitorUI(tk.Frame):
         self.debuff_canvas = tk.Canvas(
             debuff_frame, borderwidth=0, bg=self.style.colors["bg_main"], 
             relief=tk.FLAT, highlightthickness=0, selectborderwidth=0, takefocus=False,
-            height=180
+            height=140
         )
         self.debuff_list_fr = Frame(self.debuff_canvas, bg=self.style.colors["bg_main"])
         
-        self.debuff_scrollbar = Scrollbar(
-            debuff_frame, orient="vertical", command=self.debuff_canvas.yview,
-            bg=self.style.colors["bg_main"], troughcolor=self.style.colors["bg_main"],
-            activebackground=self.style.colors["bg_button_hover"], width=6
-        )
-        self.debuff_scrollbar.pack(side=RIGHT, fill='y')
-        self.debuff_canvas.configure(yscrollcommand=self.debuff_scrollbar.set)
+        # Скроллбар больше не создаётся и не отображается, оставляем только прокрутку мышкой
+        # Если потребуется оставить функционал скроллинга, не убираем yscrollcommand:
+        self.debuff_canvas.configure(yscrollcommand=lambda *args: None)
         self.debuff_canvas.pack(side=LEFT, fill=BOTH, expand=True)
         self.debuff_canvas.create_window((0, 0), window=self.debuff_list_fr, anchor="nw")
         self.debuff_list_fr.bind("<Configure>", lambda e: self.debuff_canvas.configure(scrollregion=self.debuff_canvas.bbox("all")))
@@ -415,7 +410,7 @@ class DebuffMonitorUI(tk.Frame):
 
         # === Кнопки внизу ===
         btn_fr = Frame(bottom_container, bg=self.style.colors["bg_main"])  # 👇 bottom_container
-        btn_fr.pack(pady=10)
+        btn_fr.pack(pady=20)
 
         btn_inner = Frame(btn_fr, bg=self.style.colors["bg_main"])
         btn_inner.pack()

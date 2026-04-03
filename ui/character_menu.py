@@ -193,7 +193,7 @@ def character_menu(root, frame, profiles):
         char_frame = tk.Frame(
             scrollable_frame, 
             bg="#333333",
-            highlightthickness=2,           # толщина рамки
+            highlightthickness=1,           # толщина рамки
             highlightbackground="#333333",   # цвет рамки по умолчанию
             highlightcolor="#19e1a0"         # цвет рамки при фокусе (опционально)
         )
