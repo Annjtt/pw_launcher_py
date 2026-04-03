@@ -8,6 +8,8 @@ except ImportError:
     ImageTk = None
 from utils import get_active_profile, start_game_async, update_profile, navigate_to, StyleManager
 from .add_character_menu import add_character_menu
+from ui.tooltip import ToolTip
+
 
 def character_menu(root, frame, profiles):
     style = StyleManager()
@@ -250,6 +252,27 @@ def character_menu(root, frame, profiles):
     btn_run_selected.pack(side="left", padx=1)
     btn_run_selected.bind("<Enter>", style.on_hover)
     btn_run_selected.bind("<Leave>", lambda event: style.on_leave(event, "#333333", "#dedede"))
+
+    # Кнопки импорта/экспорта
+    def import_profile():
+        # TODO: логика импорта профиля
+        messagebox.showinfo("Импорт профиля", "Функция импорта будет добавлена позже")
+
+    def export_profile():
+        # TODO: логика экспорта профиля
+        messagebox.showinfo("Экспорт профиля", "Функция экспорта будет добавлена позже")
+
+    import_btn = tk.Button(button_frame, text="📥", command=import_profile,
+                        font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0", relief="flat")
+    import_btn.pack(side="left", padx=10, expand=True)
+    import_btn.bind("<Enter>", style.on_hover)
+    import_btn.bind("<Leave>", lambda e: style.on_leave(e, "#333333", "#19e1a0"))
+
+    export_btn = tk.Button(button_frame, text="📤", command=export_profile,
+                        font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0", relief="flat")
+    export_btn.pack(side="left", padx=10, expand=True)
+    export_btn.bind("<Enter>", style.on_hover)
+    export_btn.bind("<Leave>", lambda e: style.on_leave(e, "#333333", "#19e1a0"))
     
     btn_add_character = tk.Button(button_frame, text="➕ Добавить", command=create_character, 
                                   font=("Helvetica", 10, "bold"), bg="#333333", fg="#dedede", relief="flat")
@@ -262,3 +285,6 @@ def character_menu(root, frame, profiles):
     btn_back.pack(pady=10)
     btn_back.bind("<Enter>", style.on_hover)
     btn_back.bind("<Leave>", lambda event: style.on_leave(event, "#333333", "#d42d52"))
+
+    ToolTip(import_btn, "Импорт профиля")
+    ToolTip(export_btn, "Экспорт профиля")
