@@ -235,7 +235,7 @@ class DebuffMonitorUI(tk.Frame):
             padx=5, pady=3
         )
         overlay_frame.pack(fill=BOTH, padx=10, pady=2)
-        ToolTip(overlay_frame, "Где показывать иконки дебаффов.\n↖↗↙↘ — углы экрана\nX,Y — точные координаты")
+        ToolTip(overlay_frame, "Где показывать иконки дебаффов.\n↖ ↗ ↙ ↘ — углы экрана\nX,Y — точные координаты")
         
         
         # Две строки: кнопки углов (2x2), координаты справа
