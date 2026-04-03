@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, simpledialog
 from utils import load_config, save_config, set_active_profile, delete_profile, update_profile, navigate_to, StyleManager
+from ui.tooltip import ToolTip
 
 def profile_menu(root, frame, profiles):
     style = StyleManager()
@@ -136,9 +137,32 @@ def profile_menu(root, frame, profiles):
     btn_create_profile.pack(side="left", padx=10, expand=True)
     btn_create_profile.bind("<Enter>", style.on_hover)
     btn_create_profile.bind("<Leave>", lambda e: style.on_leave(e, "#333333", "#dedede"))
+    # Кнопки импорта/экспорта
+    def import_profile():
+        # TODO: логика импорта профиля
+        messagebox.showinfo("Импорт профиля", "Функция импорта будет добавлена позже")
+
+    def export_profile():
+        # TODO: логика экспорта профиля
+        messagebox.showinfo("Экспорт профиля", "Функция экспорта будет добавлена позже")
+
+    import_btn = tk.Button(btn_frame, text="📥", command=import_profile,
+                        font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0", relief="flat")
+    import_btn.pack(side="left", padx=10, expand=True)
+    import_btn.bind("<Enter>", style.on_hover)
+    import_btn.bind("<Leave>", lambda e: style.on_leave(e, "#333333", "#19e1a0"))
+
+    export_btn = tk.Button(btn_frame, text="📤", command=export_profile,
+                        font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0", relief="flat")
+    export_btn.pack(side="left", padx=10, expand=True)
+    export_btn.bind("<Enter>", style.on_hover)
+    export_btn.bind("<Leave>", lambda e: style.on_leave(e, "#333333", "#19e1a0"))
     
     btn_back = tk.Button(btn_frame, text="← Назад", command=navigate_back,
                          font=("Helvetica", 11, "bold"), bg="#333333", fg="#d42d52", relief="flat")
     btn_back.pack(side="right", padx=10, expand=True)
     btn_back.bind("<Enter>", style.on_hover)
     btn_back.bind("<Leave>", lambda e: style.on_leave(e, "#333333", "#d42d52"))
+
+    ToolTip(import_btn, "Импорт профиля")
+    ToolTip(export_btn, "Экспорт профиля")
