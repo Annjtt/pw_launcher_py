@@ -13,6 +13,8 @@ from pathlib import Path
 import sys
 import os
 import threading
+import psutil
+import win32process
 
 # Импорт системных модулей приложения
 from styles import StyleManager
@@ -805,26 +807,70 @@ class DebuffMonitorUI(tk.Frame):
                 names.append(char_name)
         return names
 
-    def list_windows(self):
-        try:
-            # Получаем имена персонажей из профиля
-            character_names = self.get_character_names()
-            all_windows = gw.getAllTitles()
-            filtered = []
-            for w in all_windows:
-                if w.strip() and w.strip() in character_names:
-                    filtered.append(w.strip())
-            self.window_list = filtered
-            self.window_dropdown["values"] = filtered
+    # def list_windows(self):
+    #     try:
+    #         # Получаем имена персонажей из профиля
+    #         character_names = self.get_character_names()
+    #         all_windows = gw.getAllTitles()
+    #         filtered = []
+    #         for w in all_windows:
+    #             if w.strip() and w.strip() in character_names:
+    #                 filtered.append(w.strip())
+    #         self.window_list = filtered
+    #         self.window_dropdown["values"] = filtered
             
-            if self.window_title and self.window_title in filtered:
-                self.window_dropdown.current(filtered.index(self.window_title))
+    #         if self.window_title and self.window_title in filtered:
+    #             self.window_dropdown.current(filtered.index(self.window_title))
+    #             self._on_window_selected()
+    #         elif filtered:
+    #             self.window_dropdown.current(0)
+    #             self._on_window_selected()
+    #         else:
+    #             self.selected_window_text.set("Нет открытых окон")
+    #     except Exception as e:
+    #         self.selected_window_text.set(f"Ошибка: {e}")
+
+    def list_windows(self):
+        """Заполняет выпадающий список окнами процесса elementclient.exe"""
+        try:
+            # 1. Получаем список ВСЕХ видимых окон
+            all_windows = gw.getAllWindows()
+            target_process_name = "elementclient.exe"  # <-- Имя нужного процесса
+            filtered_windows = []
+
+            # 2. Перебираем каждое найденное окно
+            for window in all_windows:
+                # Пропускаем окна без названия
+                if not window.title:
+                    continue
+
+                try:
+                    # 3. Получаем ID процесса, которому принадлежит окно
+                    _, pid = win32process.GetWindowThreadProcessId(window._hWnd)
+                    
+                    # 4. Используем psutil, чтобы узнать имя процесса по его ID
+                    process = psutil.Process(pid)
+                    if process.name().lower() == target_process_name:
+                        # 5. Если имена совпадают, добавляем окно в итоговый список
+                        filtered_windows.append(window.title)
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    # Игнорируем процессы, которые закрылись или к которым нет доступа
+                    continue
+
+            # Обновляем выпадающий список новым, отфильтрованным списком
+            self.window_list = filtered_windows
+            self.window_dropdown["values"] = filtered_windows
+
+            # Логика автовыбора (оставляем как есть)
+            if self.window_title and self.window_title in filtered_windows:
+                self.window_dropdown.current(filtered_windows.index(self.window_title))
                 self._on_window_selected()
-            elif filtered:
+            elif filtered_windows:
                 self.window_dropdown.current(0)
                 self._on_window_selected()
             else:
-                self.selected_window_text.set("Нет открытых окон")
+                self.selected_window_text.set("Нет окон elementclient.exe")
+
         except Exception as e:
             self.selected_window_text.set(f"Ошибка: {e}")
 
