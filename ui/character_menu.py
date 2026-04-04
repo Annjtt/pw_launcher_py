@@ -112,20 +112,24 @@ def character_menu(root, frame, profiles):
         
         # Визуально подсвечиваем строку при начале перетаскивания (цвет при зажатии)
         highlight_drag_start(idx)
-    
+
     def highlight_drag_start(idx):
         """Подсвечивает строку, которую перетаскивают (цвет как при клике в main_menu)"""
         for i, child in enumerate(scrollable_frame.winfo_children()):
             if i == idx:
-                child.config(bg="#555555")  # Цвет при клике/драге
+                child.config(bg="#dedede")  # Светлый фон как при клике
                 for widget in child.winfo_children():
-                    if isinstance(widget, (tk.Label, tk.Checkbutton)):
-                        widget.config(bg="#555555")
+                    if isinstance(widget, tk.Label):
+                        widget.config(bg="#dedede", fg="#000000")  # Черный текст
+                    elif isinstance(widget, tk.Checkbutton):
+                        widget.config(bg="#dedede", fg="#000000")  # Черный текст для чекбокса
             else:
                 child.config(bg="#333333")
                 for widget in child.winfo_children():
-                    if isinstance(widget, (tk.Label, tk.Checkbutton)):
-                        widget.config(bg="#333333")
+                    if isinstance(widget, tk.Label):
+                        widget.config(bg="#333333", fg="#dedede")  # Возвращаем белый текст
+                    elif isinstance(widget, tk.Checkbutton):
+                        widget.config(bg="#333333", fg="#19e1a0")  # Возвращаем зеленый для чекбокса
 
     def on_motion(event):
         nonlocal drag_target_index, is_dragging, long_press_triggered
@@ -178,12 +182,14 @@ def character_menu(root, frame, profiles):
     def on_release(event):
         nonlocal drag_start_index, drag_target_index, is_dragging, long_press_triggered, after_id
         
-        # Сбрасываем подсветку всех строк
+                # Сбрасываем подсветку всех строк
         for child in scrollable_frame.winfo_children():
             child.config(bg="#333333")
             for widget in child.winfo_children():
-                if isinstance(widget, (tk.Label, tk.Checkbutton)):
-                    widget.config(bg="#333333")
+                if isinstance(widget, tk.Label):
+                    widget.config(bg="#333333", fg="#dedede")
+                elif isinstance(widget, tk.Checkbutton):
+                    widget.config(bg="#333333", fg="#19e1a0")
         
         # Отменяем таймер, если он ещё активен
         if after_id:
