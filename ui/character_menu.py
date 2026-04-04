@@ -310,7 +310,7 @@ def character_menu(root, frame, profiles):
         ]
         for button in buttons:
             btn = tk.Button(char_frame, text=button["text"], command=button["command"],
-                            font=("Helvetica", 10, "bold"), bg=button["bg"], fg=button["fg"], relief="flat", highlightthickness=0)
+                            font=("Helvetica", 10, "bold"), bg=button["bg"], fg=button["fg"], relief="flat", highlightthickness=0,  padx=6, pady=2, width=2)
             btn.pack(side="right", padx=5)
             
             # Кастомные события для кнопок с цветом при наведении

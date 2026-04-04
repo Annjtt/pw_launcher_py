@@ -125,7 +125,7 @@ def profile_menu(root, frame, profiles):
             for button in buttons:
                 btn = tk.Button(profile_frame, text=button["text"], command=button["command"], 
                                 font=("Fixedsys", 10, "bold"), bg=button["bg"], fg=button["fg"], 
-                                relief="flat", highlightthickness=0)
+                                relief="flat", highlightthickness=0,  padx=6, pady=2, width=2)
                 btn.pack(side="right", padx=7)
                 
                 # Кастомные события для кнопок
