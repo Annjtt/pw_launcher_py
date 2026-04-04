@@ -79,9 +79,7 @@ def profile_menu(root, frame, profiles):
             profile_frame = tk.Frame(
                 scrollable_frame,
                 bg="#333333",
-                highlightthickness=1,
-                highlightbackground="#333333",
-                highlightcolor="#19e1a0"
+                highlightthickness=0,  # Убираем рамку
             )
             profile_frame.pack(pady=5, padx=10, fill="x")
             profile_frame.profile_name = profile_name
@@ -90,12 +88,18 @@ def profile_menu(root, frame, profiles):
             # Клик по рамке активирует профиль
             profile_frame.bind("<Button-1>", lambda e, n=profile_name: select_and_activate_profile(n))
             
-            # Подсветка при наведении (без сохранения выбора)
+            # При наведении — меняем цвет фона
             def on_enter(e, f=profile_frame):
-                f.config(highlightbackground="#19e1a0")
+                f.config(bg="#3a3a3a")
+                for widget in f.winfo_children():
+                    if isinstance(widget, tk.Label):
+                        widget.config(bg="#3a3a3a")
             
             def on_leave(e, f=profile_frame):
-                f.config(highlightbackground="#333333")
+                f.config(bg="#333333")
+                for widget in f.winfo_children():
+                    if isinstance(widget, tk.Label):
+                        widget.config(bg="#333333")
             
             profile_frame.bind("<Enter>", on_enter)
             profile_frame.bind("<Leave>", on_leave)
@@ -114,16 +118,25 @@ def profile_menu(root, frame, profiles):
             # Кнопки: удалить и редактировать
             buttons = [
                 {"text": "❌", "command": lambda n=profile_name: delete_profile(n, root, frame, profiles), 
-                 "bg": "#424242", "fg": "#d42d52"},
+                 "bg": "#424242", "fg": "#d42d52", "hover_bg": "#555555"},
                 {"text": "✎", "command": lambda n=profile_name: edit_profile_name(n), 
-                 "bg": "#424242", "fg": "#f39c12"},
+                 "bg": "#424242", "fg": "#f39c12", "hover_bg": "#555555"},
             ]
             for button in buttons:
                 btn = tk.Button(profile_frame, text=button["text"], command=button["command"], 
-                                font=("Fixedsys", 10, "bold"), bg=button["bg"], fg=button["fg"], relief="flat")
+                                font=("Fixedsys", 10, "bold"), bg=button["bg"], fg=button["fg"], 
+                                relief="flat", highlightthickness=0)
                 btn.pack(side="right", padx=7)
-                btn.bind("<Enter>", style.on_hover)
-                btn.bind("<Leave>", lambda e, bg=button["bg"], fg=button["fg"]: style.on_leave(e, bg, fg))
+                
+                # Кастомные события для кнопок
+                def on_btn_enter(e, b=btn, bg=button["hover_bg"], fg=button["fg"]):
+                    b.config(bg=bg)
+                
+                def on_btn_leave(e, b=btn, bg=button["bg"], fg=button["fg"]):
+                    b.config(bg=bg)
+                
+                btn.bind("<Enter>", on_btn_enter)
+                btn.bind("<Leave>", on_btn_leave)
     else:
         tk.Label(scrollable_frame, text="Нет созданных профилей", font=("Helvetica", 15, "bold"), 
                  bg="#222222", fg="#d42d52").pack(pady=15)
@@ -133,10 +146,12 @@ def profile_menu(root, frame, profiles):
     btn_frame.pack(pady=20, fill="x")
     
     btn_create_profile = tk.Button(btn_frame, text="➕ Создать новый профиль", command=create_new_profile,
-                                   font=("Helvetica", 11, "bold"), bg="#333333", fg="#dedede", relief="flat")
+                                   font=("Helvetica", 11, "bold"), bg="#333333", fg="#dedede", 
+                                   relief="flat", highlightthickness=0)
     btn_create_profile.pack(side="left", padx=10, expand=True)
-    btn_create_profile.bind("<Enter>", style.on_hover)
-    btn_create_profile.bind("<Leave>", lambda e: style.on_leave(e, "#333333", "#dedede"))
+    btn_create_profile.bind("<Enter>", lambda e: btn_create_profile.config(bg="#3a3a3a"))
+    btn_create_profile.bind("<Leave>", lambda e: btn_create_profile.config(bg="#333333"))
+    
     # Кнопки импорта/экспорта
     def import_profile():
         # TODO: логика импорта профиля
@@ -147,22 +162,25 @@ def profile_menu(root, frame, profiles):
         messagebox.showinfo("Экспорт профиля", "Функция экспорта будет добавлена позже")
 
     import_btn = tk.Button(btn_frame, text="📥", command=import_profile,
-                        font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0", relief="flat")
+                        font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0", 
+                        relief="flat", highlightthickness=0)
     import_btn.pack(side="left", padx=10, expand=True)
-    import_btn.bind("<Enter>", style.on_hover)
-    import_btn.bind("<Leave>", lambda e: style.on_leave(e, "#333333", "#19e1a0"))
+    import_btn.bind("<Enter>", lambda e: import_btn.config(bg="#3a3a3a"))
+    import_btn.bind("<Leave>", lambda e: import_btn.config(bg="#333333"))
 
     export_btn = tk.Button(btn_frame, text="📤", command=export_profile,
-                        font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0", relief="flat")
+                        font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0", 
+                        relief="flat", highlightthickness=0)
     export_btn.pack(side="left", padx=10, expand=True)
-    export_btn.bind("<Enter>", style.on_hover)
-    export_btn.bind("<Leave>", lambda e: style.on_leave(e, "#333333", "#19e1a0"))
+    export_btn.bind("<Enter>", lambda e: export_btn.config(bg="#3a3a3a"))
+    export_btn.bind("<Leave>", lambda e: export_btn.config(bg="#333333"))
     
     btn_back = tk.Button(btn_frame, text="← Назад", command=navigate_back,
-                         font=("Helvetica", 11, "bold"), bg="#333333", fg="#d42d52", relief="flat")
+                         font=("Helvetica", 11, "bold"), bg="#333333", fg="#d42d52", 
+                         relief="flat", highlightthickness=0)
     btn_back.pack(side="right", padx=10, expand=True)
-    btn_back.bind("<Enter>", style.on_hover)
-    btn_back.bind("<Leave>", lambda e: style.on_leave(e, "#333333", "#d42d52"))
+    btn_back.bind("<Enter>", lambda e: btn_back.config(bg="#3a3a3a"))
+    btn_back.bind("<Leave>", lambda e: btn_back.config(bg="#333333"))
 
     ToolTip(import_btn, "Импорт профиля")
     ToolTip(export_btn, "Экспорт профиля")
