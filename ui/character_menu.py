@@ -9,6 +9,7 @@ except ImportError:
 from utils import get_active_profile, start_game_async, update_profile, navigate_to, StyleManager
 from .add_character_menu import add_character_menu
 from ui.tooltip import ToolTip
+import json
 
 
 def character_menu(root, frame, profiles):
@@ -80,7 +81,73 @@ def character_menu(root, frame, profiles):
             character_menu(root, frame, profiles)
         else:
             messagebox.showerror("Ошибка", "Неверный индекс персонажа.")
-    
+
+    def create_character_row(i, char):
+        char_frame = tk.Frame(
+            scrollable_frame,
+            bg="#333333",
+            highlightthickness=2,
+            highlightbackground="#333333",
+            highlightcolor="#19e1a0"
+        )
+        char_frame.pack(pady=5, padx=10, fill="x")
+        char_frame.config(cursor="hand2")
+        
+        # Привязываем события Drag & Drop
+        char_frame.bind("<Button-1>", lambda e, idx=i: on_drag_start(e, idx))
+        char_frame.bind("<B1-Motion>", on_drag_motion)
+        char_frame.bind("<ButtonRelease-1>", on_drag_end)
+        
+        # При наведении — меняем цвет рамки
+        def on_enter(e, f=char_frame):
+            f.config(highlightbackground="#19e1a0")
+        
+        def on_leave(e, f=char_frame):
+            f.config(highlightbackground="#333333")
+        
+        char_frame.bind("<Enter>", on_enter)
+        char_frame.bind("<Leave>", on_leave)
+        
+        # Клик по строке переключает чекбокс
+        char_frame.bind("<Button-1>", lambda e, idx=i: toggle_character(idx), add="+")
+        
+        # Чекбокс
+        var = tk.IntVar(value=1 if i in selected_characters else 0)
+        checkbox_vars.append(var)
+        
+        check_button = tk.Checkbutton(
+            char_frame, variable=var, font=("Helvetica", 12),
+            bg="#333333", fg="#19e1a0", selectcolor="#222222",
+            command=lambda i=i: toggle_character(i)
+        )
+        check_button.pack(side="left", padx=2)
+        
+        # Иконка класса
+        icon_name = char.get("icon")
+        icon_image = get_icon_image(icon_name)
+        if icon_image:
+            icon_label = tk.Label(char_frame, image=icon_image, bg="#333333")
+            icon_label.pack(side="left", padx=0)
+            frame.icon_images.append(icon_image)
+        
+        # Ник персонажа
+        char_info = f"{char.get('char', '')}"
+        tk.Label(char_frame, text=char_info, font=("Fixedsys", 12),
+                 bg="#333333", fg="#dedede").pack(side="left", padx=5)
+        
+        # Кнопки
+        buttons = [
+            {"text": "❌", "command": lambda i=i: delete_character(i), "bg": "#424242", "fg": "#d42d52"},
+            {"text": "✎", "command": lambda i=i: edit_character(i), "bg": "#424242", "fg": "#f39c12"},
+            {"text": "▶", "command": lambda i=i: start_game_for_char(i), "bg": "#424242", "fg": "#19e1a0"}
+        ]
+        for button in buttons:
+            btn = tk.Button(char_frame, text=button["text"], command=button["command"],
+                            font=("Helvetica", 10, "bold"), bg=button["bg"], fg=button["fg"], relief="flat")
+            btn.pack(side="right", padx=5)
+            btn.bind("<Enter>", style.on_hover)
+            btn.bind("<Leave>", lambda event, bg=button["bg"], fg=button["fg"]: style.on_leave(event, bg, fg))
+
     def create_character():
         # Новый персонаж создаётся только после сохранения в редакторе,
         # поэтому здесь не добавляем пустой объект в список
@@ -117,8 +184,83 @@ def character_menu(root, frame, profiles):
 
     # Область со скроллом для списка персонажей (используем только Canvas, без видимых скроллбаров)
     canvas = tk.Canvas(frame, bg="#222222", highlightthickness=0, borderwidth=0)
+    # Двойная буферизация для устранения мерцания
+    canvas.config(background="#222222")
+    canvas.configure(highlightthickness=0)
     scrollable_frame = tk.Frame(canvas, bg="#222222")
+    # Переменные для Drag & Drop
+    drag_start_index = None
+    drag_target_index = None
+    
+    def on_drag_start(event, idx):
+        nonlocal drag_start_index
+        drag_start_index = idx
+        
+    def on_drag_motion(event):
+        nonlocal drag_target_index
+        if drag_start_index is None:
+            return
+        
+        current_y = event.y_root
+        for i, child in enumerate(scrollable_frame.winfo_children()):
+            if i == drag_start_index:
+                continue
+            bbox = child.bbox()
+            if bbox:
+                y1 = child.winfo_rooty()
+                y2 = y1 + child.winfo_height()
+                if y1 <= current_y <= y2:
+                    drag_target_index = i
+                    # Визуально подсвечиваем место вставки
+                    child.config(highlightbackground="#f39c12")
+                else:
+                    child.config(highlightbackground="#333333")
+    
+    def on_drag_end(event):
+        nonlocal drag_start_index, drag_target_index
+        if drag_start_index is not None and drag_target_index is not None and drag_start_index != drag_target_index:
+            # Переставляем в списке characters
+            char = characters.pop(drag_start_index)
+            characters.insert(drag_target_index, char)
+            
+            # Полностью обновляем список (один раз, без мерцания)
+            refresh_characters_list()
+            
+            # Сохраняем порядок
+            save_characters_order(characters)
+        
+        # Сбрасываем подсветку
+        for child in scrollable_frame.winfo_children():
+            child.config(highlightbackground="#333333")
+        
+        drag_start_index = None
+        drag_target_index = None
+    
+    def refresh_characters_list():
+        """Полностью пересоздаёт список персонажей"""
+        nonlocal checkbox_vars, selected_characters
+        # Сохраняем позицию прокрутки
+        yview = canvas.yview()
+        # Очищаем списки
+        checkbox_vars.clear()
+        selected_characters.clear()
+        # Очищаем scrollable_frame
+        for widget in scrollable_frame.winfo_children():
+            widget.destroy()
+        
+        # Заново отрисовываем всех персонажей
+        for i, char in enumerate(characters):
+            create_character_row(i, char)
 
+    def save_characters_order(characters_list):
+        """Сохраняет новый порядок персонажей в профиль"""
+        nonlocal profile
+        if not profile:
+            return
+        profile["characters"] = characters_list
+        profile_name = profiles.get("active_profile")
+        if profile_name:
+            update_profile(profile_name, profile, profiles)
     # Создаём вложенный фрейм и заставляем его всегда быть по ширине канваса,
     # чтобы не оставалось пустой полосы справа
     window_id = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
@@ -189,61 +331,65 @@ def character_menu(root, frame, profiles):
         icon_cache[icon_name] = img
         return img
 
-    for i, char in enumerate(characters):
-        char_frame = tk.Frame(
-            scrollable_frame, 
-            bg="#333333",
-            highlightthickness=1,           # толщина рамки
-            highlightbackground="#333333",   # цвет рамки по умолчанию
-            highlightcolor="#19e1a0"         # цвет рамки при фокусе (опционально)
-        )
-        # отступы как раньше (pady=5, padx=10), но внутри скролл-контейнера
-        char_frame.pack(pady=5, padx=10, fill="x")
-        char_frame.config(cursor="hand2") # курсор-рука, мб удалить.
-        # При наведении — меняем цвет рамки
-        def on_enter(e, f=char_frame):
-            f.config(highlightbackground="#19e1a0")  # яркий зелёный при наведении
+    # for i, char in enumerate(characters):
+    #     char_frame = tk.Frame(
+    #         scrollable_frame, 
+    #         bg="#333333",
+    #         highlightthickness=1,           # толщина рамки
+    #         highlightbackground="#333333",   # цвет рамки по умолчанию
+    #         highlightcolor="#19e1a0"         # цвет рамки при фокусе (опционально)
+    #     )
+    #     # отступы как раньше (pady=5, padx=10), но внутри скролл-контейнера
+    #     char_frame.pack(pady=5, padx=10, fill="x")
+    #     char_frame.config(cursor="hand2") # курсор-рука, мб удалить.
+    #     # При наведении — меняем цвет рамки
+    #     def on_enter(e, f=char_frame):
+    #         f.config(highlightbackground="#19e1a0")  # яркий зелёный при наведении
         
-        def on_leave(e, f=char_frame):
-            f.config(highlightbackground="#333333")  # возвращаем исходный цвет
-        char_frame.bind("<Enter>", on_enter)
-        char_frame.bind("<Leave>", on_leave)
-        # Клик по строке переключает чекбокс
-        char_frame.bind("<Button-1>", lambda e, idx=i: toggle_character(idx))
+    #     def on_leave(e, f=char_frame):
+    #         f.config(highlightbackground="#333333")  # возвращаем исходный цвет
+    #     char_frame.bind("<Enter>", on_enter)
+    #     char_frame.bind("<Leave>", on_leave)
+    #     # Клик по строке переключает чекбокс
+    #     char_frame.bind("<Button-1>", lambda e, idx=i: toggle_character(idx))
 
-        char_info = f"{char.get('char', '')}"
-        var = tk.IntVar()
-        checkbox_vars.append(var)
+    #     char_info = f"{char.get('char', '')}"
+    #     var = tk.IntVar()
+    #     checkbox_vars.append(var)
 
-        # Чекбокс выбора персонажа
-        check_button = tk.Checkbutton(
-            char_frame, variable=var, font=("Helvetica", 12), bg="#333333", fg="#19e1a0", selectcolor="#222222",
-            command=lambda i=i: toggle_character(i)
-        )
-        check_button.pack(side="left", padx=2)
+    #     # Чекбокс выбора персонажа
+    #     check_button = tk.Checkbutton(
+    #         char_frame, variable=var, font=("Helvetica", 12), bg="#333333", fg="#19e1a0", selectcolor="#222222",
+    #         command=lambda i=i: toggle_character(i)
+    #     )
+    #     check_button.pack(side="left", padx=2)
 
-        # Иконка класса — сразу после чекбокса
-        icon_name = char.get("icon")
-        icon_image = get_icon_image(icon_name)
-        if icon_image:
-            icon_label = tk.Label(char_frame, image=icon_image, bg="#333333")
-            icon_label.pack(side="left", padx=0)
-            frame.icon_images.append(icon_image)
+    #     # Иконка класса — сразу после чекбокса
+    #     icon_name = char.get("icon")
+    #     icon_image = get_icon_image(icon_name)
+    #     if icon_image:
+    #         icon_label = tk.Label(char_frame, image=icon_image, bg="#333333")
+    #         icon_label.pack(side="left", padx=0)
+    #         frame.icon_images.append(icon_image)
 
-        # Ник + логин
-        tk.Label(char_frame, text=char_info, font=("Fixedsys", 12), bg="#333333", fg="#dedede").pack(side="left", padx=5)
-        buttons = [
-            {"text": "❌", "command": lambda i=i: delete_character(i), "bg": "#424242", "fg": "#d42d52"},
-            {"text": "✎", "command": lambda i=i: edit_character(i), "bg": "#424242", "fg": "#f39c12"},
-            {"text": "▶", "command": lambda i=i: start_game_for_char(i), "bg": "#424242", "fg": "#19e1a0"}
-        ]
-        for button in buttons:
-            btn = tk.Button(char_frame, text=button["text"], command=button["command"], 
-                            font=("Helvetica", 10, "bold"), bg=button["bg"], fg=button["fg"], relief="flat")
-            btn.pack(side="right", padx=5)
-            btn.bind("<Enter>", style.on_hover)
-            btn.bind("<Leave>", lambda event, bg=button["bg"], fg=button["fg"]: style.on_leave(event, bg, fg))
+    #     # Ник + логин
+    #     tk.Label(char_frame, text=char_info, font=("Fixedsys", 12), bg="#333333", fg="#dedede").pack(side="left", padx=5)
+    #     buttons = [
+    #         {"text": "❌", "command": lambda i=i: delete_character(i), "bg": "#424242", "fg": "#d42d52"},
+    #         {"text": "✎", "command": lambda i=i: edit_character(i), "bg": "#424242", "fg": "#f39c12"},
+    #         {"text": "▶", "command": lambda i=i: start_game_for_char(i), "bg": "#424242", "fg": "#19e1a0"}
+    #     ]
+    #     for button in buttons:
+    #         btn = tk.Button(char_frame, text=button["text"], command=button["command"], 
+    #                         font=("Helvetica", 10, "bold"), bg=button["bg"], fg=button["fg"], relief="flat")
+    #         btn.pack(side="right", padx=5)
+    #         btn.bind("<Enter>", style.on_hover)
+    #         btn.bind("<Leave>", lambda event, bg=button["bg"], fg=button["fg"]: style.on_leave(event, bg, fg))
     
+        # Создаём строки персонажей через функцию create_character_row
+    for i, char in enumerate(characters):
+        create_character_row(i, char)
+
     button_frame = tk.Frame(frame, bg="#222222")
     button_frame.pack(pady=10, padx=10, fill="x")
     
@@ -288,3 +434,4 @@ def character_menu(root, frame, profiles):
 
     ToolTip(import_btn, "Импорт профиля")
     ToolTip(export_btn, "Экспорт профиля")
+
