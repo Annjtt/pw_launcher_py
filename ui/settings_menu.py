@@ -90,5 +90,5 @@ def settings_menu(root, frame, profiles):
     telegram_link.bind("<Enter>", style.on_hover)
     telegram_link.bind("<Leave>", lambda event: style.on_leave(event, "#333333", "#d42d52"))
     
-    developer_details = tk.Label(developer_info_frame, text="v.3.1.2", font=("Fixedsys", 10), bg="#333333", fg="#19e1a0")
+    developer_details = tk.Label(developer_info_frame, text="v.3.2.2", font=("Fixedsys", 10), bg="#333333", fg="#19e1a0")
     developer_details.pack(pady=1)

@@ -36,9 +36,9 @@
                 },
                 "icon_size_overlay": 50,
                 "check_interval": 0.5,
-                "window_title": ""
+                "window_title": "gistria"
             },
-            "window_title": ""
+            "window_title": "gistria"
         }
     }
 }

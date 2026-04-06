@@ -243,7 +243,7 @@ class MainApplication:
         # Version at the very bottom
         self.version_label = tk.Label(
             self.main_frame,
-            text="v.3.1.2",
+            text="v.3.2.2",
             font=("Fixedsys", 10),
             fg="#dedede",
             bg="#222222"
