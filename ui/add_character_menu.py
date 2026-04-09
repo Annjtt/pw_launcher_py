@@ -75,19 +75,47 @@ def add_character_menu(root, frame, index, profiles):
     icon_var = tk.StringVar(value=current_label)
     
     def save_character():
+            # Получаем значения полей
+        acc = acc_entry.get().strip()
+        pwd = pwd_entry.get().strip()
+        char_name = char_entry.get().strip()
+        
+        # Проверка на пустые поля
+        if not acc:
+            messagebox.showerror("Ошибка", "Поле 'Логин' не может быть пустым!")
+            return
+        if not pwd:
+            messagebox.showerror("Ошибка", "Поле 'Пароль' не может быть пустым!")
+            return
+        if not char_name:
+            messagebox.showerror("Ошибка", "Поле 'Имя персонажа' не может быть пустым!")
+            return
+        # 👇 НОВАЯ ПРОВЕРКА: уникальность имени персонажа
+        # При редактировании (index не None) проверяем, что новое имя не занято другим персонажем
+        for i, existing_char in enumerate(characters):
+            if i == index:  # пропускаем самого себя при редактировании
+                continue
+            if existing_char.get("char", "").strip().lower() == char_name.lower():
+                messagebox.showerror(
+                    "Ошибка", 
+                    f"Персонаж с именем '{char_name}' уже существует в этом профиле!\nИмена должны быть уникальными."
+                )
+                return
+        
         char.update({
-            "acc": acc_entry.get(),
-            "pwd": pwd_entry.get(),
-            "char": char_entry.get(),
-            # сохраняем именно имя файла, а не label
+            "acc": acc,
+            "pwd": pwd,
+            "char": char_name,
             "icon": label_to_file.get(icon_var.get()) if icon_var.get() in label_to_file else None,
         })
         if index is None:
             characters.append(char)
         profile["characters"] = characters
         update_profile(profiles["active_profile"], profile, profiles)
-        from ui.character_menu import character_menu
-        character_menu(root, frame, profiles)
+        # from ui.character_menu import character_menu
+        # character_menu(root, frame, profiles)
+        from utils import navigate_to
+        navigate_to("Персонажи", root, frame, profiles)
     
     def toggle_password_visibility():
         if pwd_entry.cget('show') == '*':

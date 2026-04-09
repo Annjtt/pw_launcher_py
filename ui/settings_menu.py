@@ -8,6 +8,11 @@ def settings_menu(root, frame, profiles):
     profile = get_active_profile(profiles)
     if not profile:
         messagebox.showerror("Ошибка", "Активный профиль не выбран!")
+        # Очищаем фрейм и показываем главное меню
+        for widget in frame.winfo_children():
+            widget.destroy()
+        from ui.main_menu import main_menu
+        main_menu(root, frame, profiles)
         return
     
     def browse_file():

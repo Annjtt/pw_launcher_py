@@ -18,7 +18,14 @@ def character_menu(root, frame, profiles):
     profile = get_active_profile(profiles)
     if not profile:
         messagebox.showwarning("Предупреждение", "Активный профиль не выбран. Персонажи не загружены.")
+        # Очищаем фрейм и показываем главное меню
+        for widget in frame.winfo_children():
+            widget.destroy()
+        from ui.profile_menu import profile_menu
+        profile_menu(root, frame, profiles)
         return
+
+        
     characters = profile.get("characters", [])
     # Удаляем "пустых" персонажей, которые могли остаться после старой логики добавления
     cleaned_characters = []
@@ -54,10 +61,23 @@ def character_menu(root, frame, profiles):
                 selected_characters.append(i)
     
     def start_selected_games():
+        if not selected_characters:
+            messagebox.showwarning("Предупреждение", "Не выбран ни один персонаж!")
+            return
+
         delay = 10
         for idx in selected_characters:
-            root.after(delay, start_game_async, characters[idx], profiles)
-            delay += 15000
+            try:
+                # Проверяем, что у персонажа есть логин и пароль
+                char_data = characters[idx]
+                if not char_data.get("acc") or not char_data.get("pwd") or not char_data.get("char"):
+                    messagebox.showerror("Ошибка", f"У персонажа '{char_data.get('char', 'без имени')}' не заполнены обязательные поля!")
+                    continue
+                
+                root.after(delay, start_game_async, char_data, profiles)
+                delay += 15000
+            except Exception as e:
+                messagebox.showerror("Ошибка", f"Ошибка запуска персонажа: {e}")
     
     def start_game_for_char(index):
         start_game_async(characters[index], profiles)
@@ -72,7 +92,9 @@ def character_menu(root, frame, profiles):
             characters.pop(index)
             profile["characters"] = characters
             update_profile(profiles["active_profile"], profile, profiles)
-            character_menu(root, frame, profiles)
+            from utils import navigate_to
+            navigate_to("Персонажи", root, frame, profiles)
+            # character_menu(root, frame, profiles)
         else:
             messagebox.showerror("Ошибка", "Неверный индекс персонажа.")
 
@@ -284,7 +306,8 @@ def character_menu(root, frame, profiles):
             char_frame, variable=var, font=("Helvetica", 12),
             bg="#333333", fg="#19e1a0", selectcolor="#222222",
             activebackground="#3a3a3a",  # Цвет при наведении на чекбокс
-            highlightthickness=0
+            highlightthickness=0,
+            command=lambda i=i: toggle_character(i)
         )
         check_button.pack(side="left", padx=2)
         

@@ -28,6 +28,18 @@ DEFAULT_CAPTURE_AREA = {"x": 30, "y": 10, "w": 40, "h": 15}
 DEFAULT_OVERLAY_POS = {"preset": "top_right", "x": None, "y": None}
 DEFAULT_CHECK_INTERVAL = 0.3  # 👇 Частота сканирования (секунды)
 
+try:
+    import win32process
+except ImportError:
+    win32process = None
+    print("Предупреждение: pywin32 не установлен. Поиск окон может работать некорректно.")
+
+try:
+    import psutil
+except ImportError:
+    psutil = None
+    print("Предупреждение: psutil не установлен. Поиск окон elementclient.exe будет недоступен.")
+
 
 class DebuffMonitorUI(tk.Frame):
     def __init__(self, master, profiles, **kwargs):
@@ -832,6 +844,10 @@ class DebuffMonitorUI(tk.Frame):
 
     def list_windows(self):
         """Заполняет выпадающий список окнами процесса elementclient.exe"""
+        if psutil is None or win32process is None:
+            self.selected_window_text.set("Установите psutil и pywin32")
+            self.window_dropdown["values"] = []
+            return
         try:
             # 1. Получаем список ВСЕХ видимых окон
             all_windows = gw.getAllWindows()
