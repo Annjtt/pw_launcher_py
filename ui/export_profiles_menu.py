@@ -123,12 +123,16 @@ def export_profiles_menu(root, frame, profiles):
             
             messagebox.showinfo("Успех", f"Экспортировано профилей: {len(selected)}\nСохранено в: {file_path}")
             
+            # 👇 ПРИНУДИТЕЛЬНЫЙ ПЕРЕХОД С ОЧИСТКОЙ
+            for widget in frame.winfo_children():
+                widget.destroy()
+            frame.update_idletasks()
             from ui.profile_menu import profile_menu
             profile_menu(root, frame, profiles)
             
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось сохранить файл: {e}")
-    
+
     # Кнопка назад
     def go_back():
         from ui.profile_menu import profile_menu

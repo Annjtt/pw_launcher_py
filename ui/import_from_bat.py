@@ -118,9 +118,13 @@ def import_from_bat_menu(root, frame, profiles):
         
         messagebox.showinfo("Успех", f"Персонаж '{nickname}' успешно импортирован")
         
+        # 👇 ПРИНУДИТЕЛЬНЫЙ ПЕРЕХОД С ОЧИСТКОЙ
+        for widget in frame.winfo_children():
+            widget.destroy()
+        frame.update_idletasks()
         from ui.character_menu import character_menu
         character_menu(root, frame, profiles)
-    
+
     def go_back():
         for widget in frame.winfo_children():
             widget.destroy()

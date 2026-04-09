@@ -27,8 +27,9 @@ def import_characters_menu(root, frame, profiles):
     char_vars = {}
     selected_profile = None
     current_characters = []
+    selected_count_var = tk.StringVar(value="Выбрано персонажей: 0")  # 👈 Глобальный счётчик
     
-    # Функции для работы с чекбоксами (определяем ПЕРВЫМИ)
+    # Функции для работы с чекбоксами
     def update_selected_count():
         count = sum(1 for var in char_vars.values() if var.get())
         selected_count_var.set(f"Выбрано персонажей: {count}")
@@ -56,8 +57,8 @@ def import_characters_menu(root, frame, profiles):
                 widget.destroy()
         
         import_btn.pack_forget()
+        selected_count_var.set("Выбрано персонажей: 0")  # 👈 Сбрасываем счётчик
     
-
     def show_profile_characters(profile_name, profile_data, characters):
         nonlocal current_characters, selected_profile
         
@@ -76,7 +77,7 @@ def import_characters_menu(root, frame, profiles):
             font=("Helvetica", 11, "bold"), bg="#222222", fg="#19e1a0"
         ).pack(pady=(10, 5))
         
-        # Фрейм для кнопок управления персонажами (ВНУТРИ scrollable_frame)
+        # Фрейм для кнопок управления персонажами
         control_char_frame = tk.Frame(scrollable_frame, bg="#222222")
         control_char_frame.pack(pady=5)
         
@@ -98,22 +99,12 @@ def import_characters_menu(root, frame, profiles):
         btn_deselect_all_chars.bind("<Enter>", lambda e: btn_deselect_all_chars.config(bg="#3a3a3a"))
         btn_deselect_all_chars.bind("<Leave>", lambda e: btn_deselect_all_chars.config(bg="#333333"))
         
-        # Счётчик персонажей (тоже внутри)
-        selected_count_var = tk.StringVar(value="Выбрано персонажей: 0")
+        # Счётчик персонажей
         selected_label = tk.Label(
             control_char_frame, textvariable=selected_count_var,
             font=("Helvetica", 10, "bold"), bg="#222222", fg="#19e1a0"
         )
         selected_label.pack(side="left", padx=15)
-        
-        # Переопределяем update_selected_count для работы с этим счётчиком
-        def update_selected_count_inner():
-            count = sum(1 for var in char_vars.values() if var.get())
-            selected_count_var.set(f"Выбрано персонажей: {count}")
-        
-        # Сохраняем ссылку на update_selected_count
-        nonlocal update_selected_count
-        update_selected_count = update_selected_count_inner
         
         char_vars.clear()
         imported_characters.clear()
@@ -137,7 +128,7 @@ def import_characters_menu(root, frame, profiles):
                 row, variable=var, bg="#333333", fg="#19e1a0",
                 activebackground="#333333", selectcolor="#222222",
                 highlightthickness=0,
-                command=update_selected_count_inner
+                command=update_selected_count
             )
             cb.pack(side="left", padx=5)
             
@@ -152,7 +143,7 @@ def import_characters_menu(root, frame, profiles):
                 "profile_name": profile_name
             })
         
-        update_selected_count_inner()
+        update_selected_count()
         
         if not char_vars:
             tk.Label(
@@ -162,7 +153,7 @@ def import_characters_menu(root, frame, profiles):
             ).pack(pady=10)
         else:
             import_btn.pack(side="left", padx=10)
-
+    
     # Функция выбора файла
     def select_json_file():
         nonlocal imported_characters, current_characters
@@ -188,6 +179,7 @@ def import_characters_menu(root, frame, profiles):
             char_vars.clear()
             imported_characters.clear()
             current_characters = []
+            selected_count_var.set("Выбрано персонажей: 0")  # 👈 Сбрасываем счётчик
             
             tk.Label(
                 scrollable_frame,
@@ -206,10 +198,15 @@ def import_characters_menu(root, frame, profiles):
                 var = tk.BooleanVar(value=False)
                 profile_vars[profile_name] = var
                 
-                def on_profile_select(p_name=profile_name, p_data=profile_data, p_chars=characters):
+                # Сохраняем текущие значения для замыкания
+                p_name = profile_name
+                p_data = profile_data
+                p_chars = characters
+                
+                def on_check(check_var=var, name=p_name, data=p_data, chars=p_chars):
                     def inner():
-                        if var.get():
-                            show_profile_characters(p_name, p_data, p_chars)
+                        if check_var.get():
+                            show_profile_characters(name, data, chars)
                         else:
                             clear_characters_list()
                     return inner
@@ -218,7 +215,7 @@ def import_characters_menu(root, frame, profiles):
                     row, variable=var, bg="#333333", fg="#19e1a0",
                     activebackground="#333333", selectcolor="#222222",
                     highlightthickness=0,
-                    command=on_profile_select()
+                    command=on_check()
                 )
                 cb.pack(side="left", padx=5)
                 
@@ -275,6 +272,10 @@ def import_characters_menu(root, frame, profiles):
         else:
             messagebox.showinfo("Информация", "Нет новых персонажей для импорта")
         
+        # Принудительный переход с очисткой
+        for widget in frame.winfo_children():
+            widget.destroy()
+        frame.update_idletasks()
         from ui.character_menu import character_menu
         character_menu(root, frame, profiles)
     
@@ -284,9 +285,7 @@ def import_characters_menu(root, frame, profiles):
         from ui.character_menu import character_menu
         character_menu(root, frame, profiles)
     
-    # ========== СОЗДАНИЕ ИНТЕРФЕЙСА (ПОСЛЕ ОПРЕДЕЛЕНИЯ ВСЕХ ФУНКЦИЙ) ==========
-    
-
+    # ========== СОЗДАНИЕ ИНТЕРФЕЙСА ==========
     
     # Фрейм для списка (с прокруткой)
     canvas = tk.Canvas(frame, bg="#222222", highlightthickness=0, borderwidth=0)

@@ -172,9 +172,13 @@ def import_profiles_menu(root, frame, profiles):
         save_config(profiles)
         messagebox.showinfo("Успех", f"Импортировано профилей: {len(selected)}")
         
+        # 👇 ПРИНУДИТЕЛЬНЫЙ ПЕРЕХОД С ОЧИСТКОЙ
+        for widget in frame.winfo_children():
+            widget.destroy()
+        frame.update_idletasks()
         from ui.profile_menu import profile_menu
-        profile_menu(root, frame, profiles)
-    
+        profile_menu(root, frame, profiles)   
+
     # Кнопка назад
     def go_back():
         from ui.profile_menu import profile_menu

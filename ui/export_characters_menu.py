@@ -179,12 +179,16 @@ def export_characters_menu(root, frame, profiles):
             
             messagebox.showinfo("Успех", f"Экспортировано персонажей: {len(selected)}\nСохранено в: {file_path}")
             
+            # 👇 ПРИНУДИТЕЛЬНЫЙ ПЕРЕХОД С ОЧИСТКОЙ
+            for widget in frame.winfo_children():
+                widget.destroy()
+            frame.update_idletasks()
             from ui.character_menu import character_menu
             character_menu(root, frame, profiles)
             
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось сохранить файл: {e}")
-    
+
     def go_back():
         for widget in frame.winfo_children():
             widget.destroy()
