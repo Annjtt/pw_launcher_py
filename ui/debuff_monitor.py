@@ -371,7 +371,7 @@ class DebuffMonitorUI(tk.Frame):
               font=("Fixedsys", 8), width=20).pack(side=LEFT, padx=5)
         
         self.debug_btn = Button(
-            ctrl_fr, text="🟢 Отладка OFF", font=("Helvetica", 9, "bold"), 
+            ctrl_fr, text="Отладка OFF", font=("Helvetica", 9, "bold"), 
             bg=self.style.colors["bg_button"], fg="#f39c12",
             relief="flat", cursor="hand2", width=12,
             command=self.toggle_debug_mode
@@ -612,16 +612,17 @@ class DebuffMonitorUI(tk.Frame):
             if not hasattr(self, 'debug_windows_created') or not self.debug_windows_created:
                 self.create_debug_windows()
             self.update_debug_borders()
-            self.debug_btn.config(text="🔴 Отладка ON", bg="#d42d52")
-            self.status_text.set("Режим отладки ВКЛЮЧЕН")
+            self.debug_btn.config(text="Отладка ON", bg="#d42d52")
+            self.status_text.set("Отладка ON")
             # Запускаем обновление рамок в цикле
             self._start_debug_updater()
         else:
             self.hide_debug_borders()
-            self.debug_btn.config(text="🟢 Отладка OFF", bg=self.style.colors["bg_button"])
-            self.status_text.set("Режим отладки ВЫКЛЮЧЕН")
+            self.debug_btn.config(text="Отладка OFF", bg=self.style.colors["bg_button"])
+            self.status_text.set("Отладка OFF")
             if hasattr(self, '_debug_updater_running'):
                 self._debug_updater_running = False
+         
     
     def _start_debug_updater(self):
         """Запускает поток для обновления рамок в реальном времени"""

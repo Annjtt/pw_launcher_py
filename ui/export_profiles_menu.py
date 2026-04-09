@@ -18,9 +18,6 @@ def export_profiles_menu(root, frame, profiles):
     header.pack(pady=20)
     style.animate_text(header, "Экспорт профилей", loop=True)
     
-    # Разделительная линия
-    separator = tk.Frame(frame, height=2, bg="#333333")
-    separator.pack(fill="x", padx=20, pady=5)
     
     # Переменные
     profile_vars = {}
@@ -220,7 +217,7 @@ def export_profiles_menu(root, frame, profiles):
     btn_frame.pack(pady=20, fill="x")
     
     btn_export = tk.Button(
-        btn_frame, text="📤 Экспортировать выбранные", command=do_export,
+        btn_frame, text="⬆ Экспортировать выбранные", command=do_export,
         font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0",
         relief="flat", highlightthickness=0
     )

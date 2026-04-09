@@ -17,10 +17,7 @@ def export_characters_menu(root, frame, profiles):
     header = tk.Label(frame, text="Экспорт персонажей", font=("Helvetica", 20, "bold"), bg="#222222", fg="#19e1a0")
     header.pack(pady=20)
     style.animate_text(header, "Экспорт персонажей", loop=True)
-    
-    # Разделительная линия
-    separator = tk.Frame(frame, height=2, bg="#333333")
-    separator.pack(fill="x", padx=20, pady=5)
+        
     
     # Получаем активный профиль и его персонажей
     profile = get_active_profile(profiles)
@@ -236,7 +233,7 @@ def export_characters_menu(root, frame, profiles):
     btn_frame.pack(pady=20, fill="x")
     
     btn_export = tk.Button(
-        btn_frame, text="⬆️ Экспортировать выбранных", command=do_export,
+        btn_frame, text="⬆ Экспорт выбранных", command=do_export,
         font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0",
         relief="flat", highlightthickness=0
     )

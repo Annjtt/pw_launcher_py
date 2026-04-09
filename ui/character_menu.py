@@ -483,21 +483,21 @@ def character_menu(root, frame, profiles):
         from ui.export_characters_menu import export_characters_menu
         export_characters_menu(root, frame, profiles)
 
-    import_btn = tk.Button(button_frame_bottom, text=" ⬇️ ", command=import_characters,
+    import_btn = tk.Button(button_frame_bottom, text=" ⬇ ", command=import_characters,
                         font=("Helvetica", 10, "bold"), bg="#333333", fg="#19e1a0", 
                         relief="flat", highlightthickness=0)
     import_btn.pack(side="left", padx=5, expand=True)
     import_btn.bind("<Enter>", lambda e: import_btn.config(bg="#3a3a3a"))
     import_btn.bind("<Leave>", lambda e: import_btn.config(bg="#333333"))
 
-    btn_import_bat = tk.Button(button_frame_bottom, text=" ⬇️ ", command=import_from_bat,
+    btn_import_bat = tk.Button(button_frame_bottom, text=" ⬇ ", command=import_from_bat,
                         font=("Helvetica", 10, "bold"), bg="#333333", fg="#f39c12", 
                         relief="flat", highlightthickness=0)
     btn_import_bat.pack(side="left", padx=5, expand=True)
     btn_import_bat.bind("<Enter>", lambda e: btn_import_bat.config(bg="#3a3a3a"))
     btn_import_bat.bind("<Leave>", lambda e: btn_import_bat.config(bg="#333333"))
 
-    export_btn = tk.Button(button_frame_bottom, text=" ⬆️ ", command=export_characters,
+    export_btn = tk.Button(button_frame_bottom, text=" ⬆ ", command=export_characters,
                         font=("Helvetica", 10, "bold"), bg="#333333", fg="#19e1a0", 
                         relief="flat", highlightthickness=0)
     export_btn.pack(side="left", padx=5, expand=True)

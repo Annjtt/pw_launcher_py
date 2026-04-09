@@ -17,9 +17,6 @@ def import_profiles_menu(root, frame, profiles):
     header.pack(pady=20)
     style.animate_text(header, "Импорт профилей", loop=True)
     
-    # Разделительная линия
-    separator = tk.Frame(frame, height=2, bg="#333333")
-    separator.pack(fill="x", padx=20, pady=5)
     
     # Переменные
     imported_profiles = []
@@ -223,7 +220,7 @@ def import_profiles_menu(root, frame, profiles):
     btn_frame.pack(pady=20, fill="x")
     
     btn_select_file = tk.Button(
-        btn_frame, text="📂 Выбрать JSON файл", command=select_json_file,
+        btn_frame, text="Выбрать JSON файл", command=select_json_file,
         font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0",
         relief="flat", highlightthickness=0
     )
@@ -232,7 +229,7 @@ def import_profiles_menu(root, frame, profiles):
     btn_select_file.bind("<Leave>", lambda e: btn_select_file.config(bg="#333333"))
     
     import_btn = tk.Button(
-        btn_frame, text="⬇️ Импортировать выбранные", command=do_import,
+        btn_frame, text="⬇️️️ Импортировать выбранные", command=do_import,
         font=("Helvetica", 11, "bold"), bg="#333333", fg="#dedede",
         relief="flat", highlightthickness=0
     )

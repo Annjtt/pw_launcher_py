@@ -62,10 +62,7 @@ def import_from_bat_menu(root, frame, profiles):
     header.pack(pady=20)
     style.animate_text(header, "Импорт из BAT файла", loop=True)
     
-    # Разделительная линия
-    separator = tk.Frame(frame, height=2, bg="#333333")
-    separator.pack(fill="x", padx=20, pady=5)
-    
+
     # Распорка сверху
     spacer_top = tk.Frame(frame, height=40, bg="#222222")
     spacer_top.pack()
@@ -329,7 +326,7 @@ def import_from_bat_menu(root, frame, profiles):
     # Инструкция
     info_label = tk.Label(
         frame,
-        text="💡 Выберите BAT файл → данные подгрузятся автоматически.\nУкажите ник персонажа (если не найден) и нажмите Импортировать.",
+        text="Выберите BAT файл → данные подгрузятся автоматически.\nУкажите ник персонажа (если не найден) и нажмите Импорт.",
         font=("Helvetica", 9), bg="#222222", fg="#888888", justify="center", wraplength=380
     )
     info_label.pack(pady=15)
@@ -343,7 +340,7 @@ def import_from_bat_menu(root, frame, profiles):
     btn_frame.pack(pady=20, fill="x", side="bottom")
     
     btn_select_file = tk.Button(
-        btn_frame, text="📂 Выбрать BAT файл", command=select_bat_file,
+        btn_frame, text="Выбрать BAT файл", command=select_bat_file,
         font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0",
         relief="flat", highlightthickness=0
     )
@@ -352,7 +349,7 @@ def import_from_bat_menu(root, frame, profiles):
     btn_select_file.bind("<Leave>", lambda e: btn_select_file.config(bg="#333333"))
     
     btn_import = tk.Button(
-        btn_frame, text="⬇️ Импортировать", command=do_import,
+        btn_frame, text="⬇️ Импорт", command=do_import,
         font=("Helvetica", 11, "bold"), bg="#333333", fg="#dedede",
         relief="flat", highlightthickness=0
     )
