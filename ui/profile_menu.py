@@ -79,41 +79,30 @@ def profile_menu(root, frame, profiles):
             profile_frame = tk.Frame(
                 scrollable_frame,
                 bg="#333333",
-                highlightthickness=0,  # Убираем рамку
+                highlightthickness=0,
             )
             profile_frame.pack(pady=5, padx=10, fill="x")
             profile_frame.profile_name = profile_name
             profile_frame.config(cursor="hand2")
             
-            # Клик по рамке активирует профиль
-            profile_frame.bind("<Button-1>", lambda e, n=profile_name: select_and_activate_profile(n))
+            # Функция активации
+            def activate(n=profile_name):
+                select_and_activate_profile(n)
             
-            # При наведении — меняем цвет фона
-            def on_enter(e, f=profile_frame):
-                f.config(bg="#3a3a3a")
-                for widget in f.winfo_children():
-                    if isinstance(widget, tk.Label):
-                        widget.config(bg="#3a3a3a")
-            
-            def on_leave(e, f=profile_frame):
-                f.config(bg="#333333")
-                for widget in f.winfo_children():
-                    if isinstance(widget, tk.Label):
-                        widget.config(bg="#333333")
-            
-            profile_frame.bind("<Enter>", on_enter)
-            profile_frame.bind("<Leave>", on_leave)
+            # Клик по рамке
+            profile_frame.bind("<Button-1>", lambda e: activate())
             
             # Название профиля
             name_label = tk.Label(profile_frame, text=profile_name, font=("Fixedsys", 12), bg="#333333", fg="#dedede")
             name_label.pack(side="left", padx=10)
-            name_label.bind("<Button-1>", lambda e, n=profile_name: select_and_activate_profile(n))
+            name_label.bind("<Button-1>", lambda e: activate())
             
             # Индикатор активного профиля
             if profiles.get("active_profile") == profile_name:
                 active_label = tk.Label(profile_frame, text="✓", font=("Helvetica", 12, "bold"), 
                                         bg="#333333", fg="#19e1a0")
                 active_label.pack(side="left", padx=5)
+                active_label.bind("<Button-1>", lambda e: activate())
             
             # Кнопки: удалить и редактировать
             buttons = [

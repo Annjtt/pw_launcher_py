@@ -298,14 +298,20 @@ def character_menu(root, frame, profiles):
         char_frame.bind("<Enter>", on_enter)
         char_frame.bind("<Leave>", on_leave)
         
-        # Чекбокс (без command)
+        # Чекбокс
         var = tk.IntVar(value=1 if i in selected_characters else 0)
         checkbox_vars.append(var)
+        
+        def toggle_row():
+            toggle_character(i)
+        
+        # Клик по всей строке
+        char_frame.bind("<Button-1>", lambda e: toggle_row())
         
         check_button = tk.Checkbutton(
             char_frame, variable=var, font=("Helvetica", 12),
             bg="#333333", fg="#19e1a0", selectcolor="#222222",
-            activebackground="#3a3a3a",  # Цвет при наведении на чекбокс
+            activebackground="#3a3a3a",
             highlightthickness=0,
             command=lambda i=i: toggle_character(i)
         )
@@ -317,6 +323,7 @@ def character_menu(root, frame, profiles):
         if icon_image:
             icon_label = tk.Label(char_frame, image=icon_image, bg="#333333")
             icon_label.pack(side="left", padx=0)
+            icon_label.bind("<Button-1>", lambda e: toggle_row())
             frame.icon_images.append(icon_image)
         
         # Ник персонажа
@@ -324,6 +331,7 @@ def character_menu(root, frame, profiles):
         char_label = tk.Label(char_frame, text=char_info, font=("Fixedsys", 12),
                  bg="#333333", fg="#dedede")
         char_label.pack(side="left", padx=5)
+        char_label.bind("<Button-1>", lambda e: toggle_row())
         
         # Кнопки
         buttons = [
