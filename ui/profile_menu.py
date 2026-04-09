@@ -154,21 +154,21 @@ def profile_menu(root, frame, profiles):
     
     # Кнопки импорта/экспорта
     def import_profile():
-        # TODO: логика импорта профиля
-        messagebox.showinfo("Импорт профиля", "Функция импорта будет добавлена позже")
+        from ui.import_profiles_menu import import_profiles_menu
+        import_profiles_menu(root, frame, profiles)
 
     def export_profile():
-        # TODO: логика экспорта профиля
-        messagebox.showinfo("Экспорт профиля", "Функция экспорта будет добавлена позже")
+        from ui.export_profiles_menu import export_profiles_menu
+        export_profiles_menu(root, frame, profiles)
 
-    import_btn = tk.Button(btn_frame, text="📥", command=import_profile,
+    import_btn = tk.Button(btn_frame, text=" 📥 ", command=import_profile,
                         font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0", 
                         relief="flat", highlightthickness=0)
     import_btn.pack(side="left", padx=10, expand=True)
     import_btn.bind("<Enter>", lambda e: import_btn.config(bg="#3a3a3a"))
     import_btn.bind("<Leave>", lambda e: import_btn.config(bg="#333333"))
 
-    export_btn = tk.Button(btn_frame, text="📤", command=export_profile,
+    export_btn = tk.Button(btn_frame, text=" 📤 ", command=export_profile,
                         font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0", 
                         relief="flat", highlightthickness=0)
     export_btn.pack(side="left", padx=10, expand=True)

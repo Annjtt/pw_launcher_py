@@ -462,21 +462,37 @@ def character_menu(root, frame, profiles):
     btn_run_selected.bind("<Leave>", lambda e: btn_run_selected.config(bg="#333333"))
 
     # Кнопки импорта/экспорта
-    def import_profile():
-        messagebox.showinfo("Импорт профиля", "Функция импорта будет добавлена позже")
+    def import_characters():
+        from ui.import_characters_menu import import_characters_menu
+        import_characters_menu(root, frame, profiles)
 
-    def export_profile():
-        messagebox.showinfo("Экспорт профиля", "Функция экспорта будет добавлена позже")
+    # Кнопка импорта из BAT
+    def import_from_bat():
+        from ui.import_from_bat import import_from_bat_menu
+        import_from_bat_menu(root, frame, profiles)
 
-    import_btn = tk.Button(button_frame_bottom, text="📥", command=import_profile,
-                        font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0", relief="flat", highlightthickness=0)
-    import_btn.pack(side="left", padx=10, expand=True)
+    def export_characters():
+        from ui.export_characters_menu import export_characters_menu
+        export_characters_menu(root, frame, profiles)
+
+    import_btn = tk.Button(button_frame_bottom, text=" ⬇️ ", command=import_characters,
+                        font=("Helvetica", 10, "bold"), bg="#333333", fg="#19e1a0", 
+                        relief="flat", highlightthickness=0)
+    import_btn.pack(side="left", padx=5, expand=True)
     import_btn.bind("<Enter>", lambda e: import_btn.config(bg="#3a3a3a"))
     import_btn.bind("<Leave>", lambda e: import_btn.config(bg="#333333"))
 
-    export_btn = tk.Button(button_frame_bottom, text="📤", command=export_profile,
-                        font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0", relief="flat", highlightthickness=0)
-    export_btn.pack(side="left", padx=10, expand=True)
+    btn_import_bat = tk.Button(button_frame_bottom, text=" ⬇️ ", command=import_from_bat,
+                        font=("Helvetica", 10, "bold"), bg="#333333", fg="#f39c12", 
+                        relief="flat", highlightthickness=0)
+    btn_import_bat.pack(side="left", padx=5, expand=True)
+    btn_import_bat.bind("<Enter>", lambda e: btn_import_bat.config(bg="#3a3a3a"))
+    btn_import_bat.bind("<Leave>", lambda e: btn_import_bat.config(bg="#333333"))
+
+    export_btn = tk.Button(button_frame_bottom, text=" ⬆️ ", command=export_characters,
+                        font=("Helvetica", 10, "bold"), bg="#333333", fg="#19e1a0", 
+                        relief="flat", highlightthickness=0)
+    export_btn.pack(side="left", padx=5, expand=True)
     export_btn.bind("<Enter>", lambda e: export_btn.config(bg="#3a3a3a"))
     export_btn.bind("<Leave>", lambda e: export_btn.config(bg="#333333"))
     
@@ -492,5 +508,6 @@ def character_menu(root, frame, profiles):
     btn_back.bind("<Enter>", lambda e: btn_back.config(bg="#3a3a3a"))
     btn_back.bind("<Leave>", lambda e: btn_back.config(bg="#333333"))
 
-    ToolTip(import_btn, "Импорт профиля")
-    ToolTip(export_btn, "Экспорт профиля")
+    ToolTip(import_btn, "Импорт персонажа.json")
+    ToolTip(btn_import_bat, "Импорт персонажа.bat")
+    ToolTip(export_btn, "Экспорт персонажа")
