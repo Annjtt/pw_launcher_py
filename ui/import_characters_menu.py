@@ -2,7 +2,7 @@ import os
 import tkinter as tk
 from tkinter import messagebox, filedialog
 import json
-from utils import StyleManager, save_config, get_active_profile
+from utils import StyleManager, save_config, get_active_profile, get_icon_image
 
 def import_characters_menu(root, frame, profiles):
     """Форма для импорта персонажей из внешнего JSON файла"""
@@ -27,7 +27,7 @@ def import_characters_menu(root, frame, profiles):
     char_vars = {}
     selected_profile = None
     current_characters = []
-    selected_count_var = tk.StringVar(value="Выбрано персонажей: 0")  # 👈 Глобальный счётчик
+    selected_count_var = tk.StringVar(value="Выбрано персонажей: 0")
     
     # Функции для работы с чекбоксами
     def update_selected_count():
@@ -57,7 +57,7 @@ def import_characters_menu(root, frame, profiles):
                 widget.destroy()
         
         import_btn.pack_forget()
-        selected_count_var.set("Выбрано персонажей: 0")  # 👈 Сбрасываем счётчик
+        selected_count_var.set("Выбрано персонажей: 0")
     
     def show_profile_characters(profile_name, profile_data, characters):
         nonlocal current_characters, selected_profile
@@ -138,7 +138,17 @@ def import_characters_menu(root, frame, profiles):
                 command=update_selected_count
             )
             cb.pack(side="left", padx=5)
-            cb.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
+            #cb.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
+            
+            # Иконка класса
+            icon_name = char.get("icon")
+            if icon_name:
+                icon_img = get_icon_image(icon_name, (20, 20))
+                if icon_img:
+                    icon_label = tk.Label(row, image=icon_img, bg="#333333")
+                    icon_label.image = icon_img
+                    icon_label.pack(side="left", padx=2)
+                    icon_label.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
             
             label = tk.Label(
                 row, text=f"{char_name} (логин: {char.get('acc', '')})",
@@ -147,6 +157,12 @@ def import_characters_menu(root, frame, profiles):
             label.pack(side="left", padx=5)
             label.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
             
+            imported_characters.append({
+                "char": char,
+                "profile_name": profile_name
+            })
+            
+            # Ховер эффект
             def on_enter(e, r=row):
                 r.config(bg="#3a3a3a")
                 for w in r.winfo_children():
@@ -159,17 +175,6 @@ def import_characters_menu(root, frame, profiles):
             
             row.bind("<Enter>", on_enter)
             row.bind("<Leave>", on_leave)
-            
-            label = tk.Label(
-                row, text=f"{char_name} (логин: {char.get('acc', '')})",
-                font=("Fixedsys", 10), bg="#333333", fg="#dedede"
-            )
-            label.pack(side="left", padx=5)
-            
-            imported_characters.append({
-                "char": char,
-                "profile_name": profile_name
-            })
         
         update_selected_count()
         
@@ -207,7 +212,7 @@ def import_characters_menu(root, frame, profiles):
             char_vars.clear()
             imported_characters.clear()
             current_characters = []
-            selected_count_var.set("Выбрано персонажей: 0")  # 👈 Сбрасываем счётчик
+            selected_count_var.set("Выбрано персонажей: 0")
             
             tk.Label(
                 scrollable_frame,
@@ -222,28 +227,32 @@ def import_characters_menu(root, frame, profiles):
                 
                 row = tk.Frame(scrollable_frame, bg="#333333")
                 row.pack(pady=3, padx=10, fill="x")
+                row.config(cursor="hand2")
                 
                 var = tk.BooleanVar(value=False)
                 profile_vars[profile_name] = var
                 
-                # Сохраняем текущие значения для замыкания
+                # Сохраняем значения для замыкания
                 p_name = profile_name
                 p_data = profile_data
                 p_chars = characters
                 
-                def on_check(check_var=var, name=p_name, data=p_data, chars=p_chars):
-                    def inner():
-                        if check_var.get():
-                            show_profile_characters(name, data, chars)
-                        else:
-                            clear_characters_list()
-                    return inner
+                # Функция переключения
+                def toggle_profile(check_var=var, name=p_name, data=p_data, chars=p_chars):
+                    check_var.set(not check_var.get())
+                    if check_var.get():
+                        show_profile_characters(name, data, chars)
+                    else:
+                        clear_characters_list()
+                
+                # Клик по строке
+                row.bind("<Button-1>", lambda e, cv=var, n=p_name, d=p_data, c=p_chars: toggle_profile(cv, n, d, c))
                 
                 cb = tk.Checkbutton(
                     row, variable=var, bg="#333333", fg="#19e1a0",
                     activebackground="#333333", selectcolor="#222222",
                     highlightthickness=0,
-                    command=on_check()
+                    command=lambda cv=var, n=p_name, d=p_data, c=p_chars: toggle_profile(cv, n, d, c)
                 )
                 cb.pack(side="left", padx=5)
                 
@@ -252,6 +261,20 @@ def import_characters_menu(root, frame, profiles):
                     font=("Fixedsys", 11), bg="#333333", fg="#dedede"
                 )
                 label.pack(side="left", padx=5)
+                label.bind("<Button-1>", lambda e, cv=var, n=p_name, d=p_data, c=p_chars: toggle_profile(cv, n, d, c))
+                # Ховер эффект
+                def on_enter(e, r=row):
+                    r.config(bg="#3a3a3a")
+                    for w in r.winfo_children():
+                        w.config(bg="#3a3a3a")
+                
+                def on_leave(e, r=row):
+                    r.config(bg="#333333")
+                    for w in r.winfo_children():
+                        w.config(bg="#333333")
+                
+                row.bind("<Enter>", on_enter)
+                row.bind("<Leave>", on_leave)
             
             if not profile_vars:
                 tk.Label(
@@ -263,8 +286,7 @@ def import_characters_menu(root, frame, profiles):
         except json.JSONDecodeError:
             messagebox.showerror("Ошибка", "Неверный формат JSON файла")
         except Exception as e:
-            messagebox.showerror("Ошибка", f"Не удалось загрузить файл: {e}")
-    
+            messagebox.showerror("Ошибка", f"Не удалось загрузить файл: {e}")  
     # Кнопка импорта
     def do_import():
         if not selected_profile:
@@ -300,7 +322,6 @@ def import_characters_menu(root, frame, profiles):
         else:
             messagebox.showinfo("Информация", "Нет новых персонажей для импорта")
         
-        # Принудительный переход с очисткой
         for widget in frame.winfo_children():
             widget.destroy()
         frame.update_idletasks()
@@ -340,10 +361,10 @@ def import_characters_menu(root, frame, profiles):
     # Инструкция
     info_label = tk.Label(
         frame,
-        text="Выберите JSON файл → выберите профиль → \n отметьте персонажей для импорта\n(будут показаны только новые персонажи,\n которых ещё нет в текущем профиле)",
-        font=("Helvetica", 9), bg="#222222", fg="#888888", justify="center"
+        text="Выберите JSON файл → выберите профиль → отметьте персонажей для импорта\n(будут показаны только новые персонажи, которых ещё нет в текущем профиле)",
+        font=("Helvetica", 9), bg="#222222", fg="#888888", justify="center", wraplength=380
     )
-    info_label.pack(pady=15, padx=10)
+    info_label.pack(pady=10)
     
     # Фрейм с основными кнопками
     btn_frame = tk.Frame(frame, bg="#222222")

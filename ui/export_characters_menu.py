@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import messagebox, filedialog
 import json
 from datetime import datetime
-from utils import StyleManager, get_active_profile
+from utils import StyleManager, get_active_profile, get_icon_image
 
 def export_characters_menu(root, frame, profiles):
     """Форма для экспорта выбранных персонажей в JSON файл"""
@@ -128,14 +128,23 @@ def export_characters_menu(root, frame, profiles):
         )
         cb.pack(side="left", padx=5)
         # Привязываем клик к ЧЕКБОКСУ
-        cb.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
+        #cb.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
         
-        # иконка если есть
+        # Иконка класса
         icon_name = char.get("icon")
         if icon_name:
-            icon_label = tk.Label(row, text="🎭", font=("Helvetica", 10),
-                                  bg="#333333", fg="#19e1a0")
-            icon_label.pack(side="left", padx=2)
+            icon_img = get_icon_image(icon_name, (20, 20))
+            if icon_img:
+                icon_label = tk.Label(row, image=icon_img, bg="#333333")
+                icon_label.image = icon_img  # сохраняем ссылку
+                icon_label.pack(side="left", padx=2)
+                icon_label.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
+            else:
+                # если иконка не загрузилась, показываем эмодзи
+                icon_label = tk.Label(row, text="🎭", font=("Helvetica", 10),
+                                      bg="#333333", fg="#19e1a0")
+                icon_label.pack(side="left", padx=2)
+                icon_label.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
             # Привязываем клик к ИКОНКЕ
             icon_label.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
         

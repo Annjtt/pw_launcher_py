@@ -167,7 +167,7 @@ def export_profiles_menu(root, frame, profiles):
                 command=update_selected_count
             )
             cb.pack(side="left", padx=5)
-            cb.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
+            #cb.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
             
             # 👇 ПЕРЕМЕННАЯ ДОЛЖНА БЫТЬ ОПРЕДЕЛЕНА ДО ИСПОЛЬЗОВАНИЯ
             characters_count = len(profile_data.get("characters", []))

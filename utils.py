@@ -27,16 +27,13 @@ def load_config():
         save_config(default_profiles)
         return default_profiles
 
-
 def save_config(profiles):
     with open(config_file, "w") as file:
         json.dump(profiles, file, indent=4)
 
-
 def get_active_profile(profiles):
     profile_name = profiles.get("active_profile")
     return profiles["profiles"].get(profile_name) if profile_name else None
-
 
 def set_active_profile(profile_name, root, frame, profiles):
     profiles["active_profile"] = profile_name
@@ -44,11 +41,9 @@ def set_active_profile(profile_name, root, frame, profiles):
     from ui.character_menu import character_menu
     character_menu(root, frame, profiles)
 
-
 def update_profile(profile_name, data, profiles):
     profiles["profiles"][profile_name] = data
     save_config(profiles)
-
 
 def delete_profile(profile_name, root, frame, profiles):
     if profile_name in profiles["profiles"]:
@@ -58,7 +53,6 @@ def delete_profile(profile_name, root, frame, profiles):
         profile_menu(root, frame, profiles)
     else:
         messagebox.showerror("Ошибка", "Профиль не найден.")
-
 
 def start_game_async(account, profiles):
     profile = get_active_profile(profiles)
@@ -165,6 +159,36 @@ def navigate_to(option, root, frame, profiles):
     finally:
         _navigation_lock = False
 
+def get_icon_image(icon_name, size=(16, 16)):
+    """Возвращает PhotoImage иконки или None"""
+    if not icon_name:
+        return None
+    
+    icon_dirs = [
+        os.path.join("assets", "prof"),
+        os.path.join("web", "assets", "prof"),
+    ]
+    
+    icon_path = None
+    for d in icon_dirs:
+        candidate = os.path.join(d, icon_name)
+        if os.path.isfile(candidate):
+            icon_path = candidate
+            break
+    
+    if not icon_path:
+        return None
+    
+    try:
+        if icon_path.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".webp")):
+            from PIL import Image, ImageTk
+            image = Image.open(icon_path)
+            image = image.resize(size, Image.Resampling.LANCZOS)
+            return ImageTk.PhotoImage(image)
+        else:
+            return tk.PhotoImage(file=icon_path)
+    except:
+        return None
 
 class MainApplication:
     def __init__(self):
