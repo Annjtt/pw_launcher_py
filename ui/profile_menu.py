@@ -85,24 +85,24 @@ def profile_menu(root, frame, profiles):
             profile_frame.profile_name = profile_name
             profile_frame.config(cursor="hand2")
             
-            # Функция активации
+            # Функция активации с фиксацией значения
             def activate(n=profile_name):
                 select_and_activate_profile(n)
             
             # Клик по рамке
-            profile_frame.bind("<Button-1>", lambda e: activate())
+            profile_frame.bind("<Button-1>", lambda e, n=profile_name: select_and_activate_profile(n))
             
             # Название профиля
             name_label = tk.Label(profile_frame, text=profile_name, font=("Fixedsys", 12), bg="#333333", fg="#dedede")
             name_label.pack(side="left", padx=10)
-            name_label.bind("<Button-1>", lambda e: activate())
+            name_label.bind("<Button-1>", lambda e, n=profile_name: select_and_activate_profile(n))
             
             # Индикатор активного профиля
             if profiles.get("active_profile") == profile_name:
                 active_label = tk.Label(profile_frame, text="✓", font=("Helvetica", 12, "bold"), 
                                         bg="#333333", fg="#19e1a0")
                 active_label.pack(side="left", padx=5)
-                active_label.bind("<Button-1>", lambda e: activate())
+                active_label.bind("<Button-1>", lambda e, n=profile_name: select_and_activate_profile(n))
             
             # Кнопки: удалить и редактировать
             buttons = [
