@@ -120,9 +120,16 @@ def import_characters_menu(root, frame, profiles):
             
             row = tk.Frame(scrollable_frame, bg="#333333")
             row.pack(pady=2, padx=20, fill="x")
+            row.config(cursor="hand2")
             
             var = tk.BooleanVar(value=True)
             char_vars[idx] = var
+            
+            def toggle_row(row_var=var):
+                row_var.set(not row_var.get())
+                update_selected_count()
+            
+            row.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
             
             cb = tk.Checkbutton(
                 row, variable=var, bg="#333333", fg="#19e1a0",
@@ -131,6 +138,27 @@ def import_characters_menu(root, frame, profiles):
                 command=update_selected_count
             )
             cb.pack(side="left", padx=5)
+            cb.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
+            
+            label = tk.Label(
+                row, text=f"{char_name} (логин: {char.get('acc', '')})",
+                font=("Fixedsys", 10), bg="#333333", fg="#dedede"
+            )
+            label.pack(side="left", padx=5)
+            label.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
+            
+            def on_enter(e, r=row):
+                r.config(bg="#3a3a3a")
+                for w in r.winfo_children():
+                    w.config(bg="#3a3a3a")
+            
+            def on_leave(e, r=row):
+                r.config(bg="#333333")
+                for w in r.winfo_children():
+                    w.config(bg="#333333")
+            
+            row.bind("<Enter>", on_enter)
+            row.bind("<Leave>", on_leave)
             
             label = tk.Label(
                 row, text=f"{char_name} (логин: {char.get('acc', '')})",
@@ -312,10 +340,10 @@ def import_characters_menu(root, frame, profiles):
     # Инструкция
     info_label = tk.Label(
         frame,
-        text="Выберите JSON файл → выберите профиль → отметьте персонажей для импорта\n(будут показаны только новые персонажи, которых ещё нет в текущем профиле)",
+        text="Выберите JSON файл → выберите профиль → \n отметьте персонажей для импорта\n(будут показаны только новые персонажи,\n которых ещё нет в текущем профиле)",
         font=("Helvetica", 9), bg="#222222", fg="#888888", justify="center"
     )
-    info_label.pack(pady=10)
+    info_label.pack(pady=15, padx=10)
     
     # Фрейм с основными кнопками
     btn_frame = tk.Frame(frame, bg="#222222")

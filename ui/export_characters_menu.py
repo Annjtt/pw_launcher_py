@@ -108,9 +108,17 @@ def export_characters_menu(root, frame, profiles):
     for idx, char in enumerate(characters):
         row = tk.Frame(scrollable_frame, bg="#333333")
         row.pack(pady=3, padx=10, fill="x")
+        row.config(cursor="hand2")
         
         var = tk.BooleanVar(value=False)
         char_vars[idx] = var
+        
+        def toggle_row(row_var=var):
+            row_var.set(not row_var.get())
+            update_selected_count()
+        
+        # Привязываем клик к САМОЙ СТРОКЕ
+        row.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
         
         cb = tk.Checkbutton(
             row, variable=var, bg="#333333", fg="#19e1a0",
@@ -119,13 +127,17 @@ def export_characters_menu(root, frame, profiles):
             command=update_selected_count
         )
         cb.pack(side="left", padx=5)
+        # Привязываем клик к ЧЕКБОКСУ
+        cb.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
         
-        # Иконка класса если есть
+        # иконка если есть
         icon_name = char.get("icon")
         if icon_name:
             icon_label = tk.Label(row, text="🎭", font=("Helvetica", 10),
                                   bg="#333333", fg="#19e1a0")
             icon_label.pack(side="left", padx=2)
+            # Привязываем клик к ИКОНКЕ
+            icon_label.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
         
         label = tk.Label(
             row,
@@ -133,6 +145,22 @@ def export_characters_menu(root, frame, profiles):
             font=("Fixedsys", 11), bg="#333333", fg="#dedede"
         )
         label.pack(side="left", padx=5)
+        # Привязываем клик к ЛЕЙБЛУ
+        label.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
+        
+        # Ховер эффект для строки и всех дочерних виджетов
+        def on_enter(e, r=row):
+            r.config(bg="#3a3a3a")
+            for w in r.winfo_children():
+                w.config(bg="#3a3a3a")
+        
+        def on_leave(e, r=row):
+            r.config(bg="#333333")
+            for w in r.winfo_children():
+                w.config(bg="#333333")
+        
+        row.bind("<Enter>", on_enter)
+        row.bind("<Leave>", on_leave)
     
     # Упаковываем canvas
     canvas.pack(pady=10, padx=10, fill="both", expand=True)
@@ -179,7 +207,6 @@ def export_characters_menu(root, frame, profiles):
             
             messagebox.showinfo("Успех", f"Экспортировано персонажей: {len(selected)}\nСохранено в: {file_path}")
             
-            # 👇 ПРИНУДИТЕЛЬНЫЙ ПЕРЕХОД С ОЧИСТКОЙ
             for widget in frame.winfo_children():
                 widget.destroy()
             frame.update_idletasks()

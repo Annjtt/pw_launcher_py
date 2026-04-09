@@ -122,9 +122,16 @@ def import_profiles_menu(root, frame, profiles):
                 
                 row = tk.Frame(scrollable_frame, bg="#333333")
                 row.pack(pady=3, padx=10, fill="x")
+                row.config(cursor="hand2")
                 
                 var = tk.BooleanVar(value=True)
                 profile_vars[profile_name] = var
+                
+                def toggle_row(row_var=var):
+                    row_var.set(not row_var.get())
+                    update_selected_count()
+                
+                row.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
                 
                 cb = tk.Checkbutton(
                     row, variable=var, bg="#333333", fg="#19e1a0",
@@ -133,12 +140,29 @@ def import_profiles_menu(root, frame, profiles):
                     command=update_selected_count
                 )
                 cb.pack(side="left", padx=5)
+                cb.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
                 
+                characters_count = len(profile_data.get("characters", []))
+
                 label = tk.Label(
                     row, text=profile_name, font=("Fixedsys", 11),
                     bg="#333333", fg="#dedede"
                 )
                 label.pack(side="left", padx=5)
+                label.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
+                
+                def on_enter(e, r=row):
+                    r.config(bg="#3a3a3a")
+                    for w in r.winfo_children():
+                        w.config(bg="#3a3a3a")
+                
+                def on_leave(e, r=row):
+                    r.config(bg="#333333")
+                    for w in r.winfo_children():
+                        w.config(bg="#333333")
+                
+                row.bind("<Enter>", on_enter)
+                row.bind("<Leave>", on_leave)
             
             update_selected_count()
             
@@ -172,7 +196,6 @@ def import_profiles_menu(root, frame, profiles):
         save_config(profiles)
         messagebox.showinfo("Успех", f"Импортировано профилей: {len(selected)}")
         
-        # 👇 ПРИНУДИТЕЛЬНЫЙ ПЕРЕХОД С ОЧИСТКОЙ
         for widget in frame.winfo_children():
             widget.destroy()
         frame.update_idletasks()
@@ -209,7 +232,7 @@ def import_profiles_menu(root, frame, profiles):
     btn_select_file.bind("<Leave>", lambda e: btn_select_file.config(bg="#333333"))
     
     import_btn = tk.Button(
-        btn_frame, text="📥 Импортировать выбранные", command=do_import,
+        btn_frame, text="⬇️ Импортировать выбранные", command=do_import,
         font=("Helvetica", 11, "bold"), bg="#333333", fg="#dedede",
         relief="flat", highlightthickness=0
     )
@@ -226,5 +249,3 @@ def import_profiles_menu(root, frame, profiles):
     btn_back.pack(side="right", padx=10, expand=True)
     btn_back.bind("<Enter>", lambda e: btn_back.config(bg="#3a3a3a"))
     btn_back.bind("<Leave>", lambda e: btn_back.config(bg="#333333"))
-    
-    

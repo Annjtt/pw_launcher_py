@@ -149,9 +149,16 @@ def export_profiles_menu(root, frame, profiles):
         for profile_name, profile_data in profiles["profiles"].items():
             row = tk.Frame(scrollable_frame, bg="#333333")
             row.pack(pady=3, padx=10, fill="x")
+            row.config(cursor="hand2")
             
             var = tk.BooleanVar(value=False)
             profile_vars[profile_name] = var
+            
+            def toggle_row(row_var=var):
+                row_var.set(not row_var.get())
+                update_selected_count()
+            
+            row.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
             
             cb = tk.Checkbutton(
                 row, variable=var, bg="#333333", fg="#19e1a0",
@@ -160,6 +167,32 @@ def export_profiles_menu(root, frame, profiles):
                 command=update_selected_count
             )
             cb.pack(side="left", padx=5)
+            cb.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
+            
+            # 👇 ПЕРЕМЕННАЯ ДОЛЖНА БЫТЬ ОПРЕДЕЛЕНА ДО ИСПОЛЬЗОВАНИЯ
+            characters_count = len(profile_data.get("characters", []))
+            
+            label = tk.Label(
+                row, 
+                text=f"{profile_name} (персонажей: {characters_count})", 
+                font=("Fixedsys", 11),
+                bg="#333333", fg="#dedede"
+            )
+            label.pack(side="left", padx=5)
+            label.bind("<Button-1>", lambda e, rv=var: toggle_row(rv))
+            
+            def on_enter(e, r=row):
+                r.config(bg="#3a3a3a")
+                for w in r.winfo_children():
+                    w.config(bg="#3a3a3a")
+            
+            def on_leave(e, r=row):
+                r.config(bg="#333333")
+                for w in r.winfo_children():
+                    w.config(bg="#333333")
+            
+            row.bind("<Enter>", on_enter)
+            row.bind("<Leave>", on_leave)
             
             characters_count = len(profile_data.get("characters", []))
             
