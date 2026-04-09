@@ -233,7 +233,7 @@ def export_characters_menu(root, frame, profiles):
     btn_frame.pack(pady=20, fill="x")
     
     btn_export = tk.Button(
-        btn_frame, text="⬆ Экспорт выбранных", command=do_export,
+        btn_frame, text="Экспорт выбранных", command=do_export,
         font=("Helvetica", 11, "bold"), bg="#333333", fg="#19e1a0",
         relief="flat", highlightthickness=0
     )

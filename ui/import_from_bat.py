@@ -349,7 +349,8 @@ def import_from_bat_menu(root, frame, profiles):
     btn_select_file.bind("<Leave>", lambda e: btn_select_file.config(bg="#333333"))
     
     btn_import = tk.Button(
-        btn_frame, text="⬇️ Импорт", command=do_import,
+        btn_frame, text="Импорт", command=do_import,
+   
         font=("Helvetica", 11, "bold"), bg="#333333", fg="#dedede",
         relief="flat", highlightthickness=0
     )
